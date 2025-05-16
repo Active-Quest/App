@@ -1,10 +1,11 @@
+import { linkTo } from "expo-router/build/global-state/routing";
 import React from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity} from "react-native";
 
 export default function Index(){
     return(
         <View style={styles.container}>
-            <TouchableOpacity style={styles.button} onPress={() => console.log('Log in pressed!')}>
+            <TouchableOpacity style={styles.button} onPress={() => linkTo('./login')}>
                 <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => console.log('Register pressed!')}>
