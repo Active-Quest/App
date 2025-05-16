@@ -16,10 +16,6 @@ var usersRouter = require('./routes/userRoutes');
 
 var app = express();
 
-app.listen(3000, '0.0.0.0', () => {
-  console.log("Server running on port 3000");
-});
-
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -59,6 +55,10 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   //res.render('error');
   res.json(err);
+});
+
+app.listen(3000, '0.0.0.0', () => {
+  console.log("Server running on port 3000");
 });
 
 module.exports = app;
