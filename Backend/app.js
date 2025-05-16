@@ -16,6 +16,24 @@ var usersRouter = require('./routes/userRoutes');
 
 var app = express();
 
+app.listen(3000, '0.0.0.0', () => {
+  console.log("Server running on port 3000");
+});
+
+var cors = require('cors');
+app.use(cors({
+  credentials: true,
+  origin: function(origin, callback){
+    // Allow requests with no origin (mobile apps, curl)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin)===-1){
+      var msg = "The CORS policy does not allow access from the specified Origin.";
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+}));
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

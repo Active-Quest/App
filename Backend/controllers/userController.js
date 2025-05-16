@@ -144,7 +144,10 @@ module.exports = {
                 }
                 req.session.userId = user._id;
                 //res.redirect('/users/profile');
-                return res.json(user);
+                return res.json({
+                    status:"success",
+                    data:user
+                });
 
         }catch(err){
             return next(err);
