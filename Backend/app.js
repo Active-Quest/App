@@ -17,9 +17,7 @@ var activitysRouter = require('./routes/activityRoutes');
 
 var app = express();
 
-app.listen(3000, '0.0.0.0', () => {
-  console.log("Server running on port 3000");
-});
+
 
 var cors = require('cors');
 app.use(cors({

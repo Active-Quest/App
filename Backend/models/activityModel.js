@@ -12,12 +12,12 @@ var activitySchema = new Schema({
 	'endTime' : Date,
 	'duration' : String,
 	'distance' : String,
+	/*
 	'waypoints' : {
-		type: [Schema.Types.ObjectId],
-		ref: Location,
+		type: Location,
 		default : []
 	}
-	
+	*/
 	});
 
 var Activity = mongoose.model('activity', activitySchema);
