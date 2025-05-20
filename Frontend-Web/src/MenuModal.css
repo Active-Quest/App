@@ -62,34 +62,47 @@ header {
     flex-direction: column;
     gap: 0.75rem;
     margin: 0 auto;
-  }
-  .auth-form input {
+}
+
+.auth-form input {
     padding: 0.5rem;
     border: 1px solid var(--color-muted);
     border-radius: 4px;
     color: var(--color-text);
-  }
-  .auth-form button[type="submit"] {
+}
+
+.auth-form button[type="submit"] {
     padding: 0.6rem;
     background: var(--color-primary);
     color: #fff;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-  }
-  .auth-form button[type="submit"]:hover {
+}
+
+.auth-form button[type="submit"]:hover {
     background: var(--color-accent);
-  }
+}
   
-  /* Switch between login/register */
-  .auth-form p {
+/* Switch between login/register */
+.auth-form p {
     text-align: center;
     color: var(--color-muted);
-  }
-  .switch-view {
+}
+.switch-view {
     color: var(--color-primary);
     cursor: pointer;
     text-decoration: underline;
-  }
+}
+
+.auth-form button {
+    padding: 0.6rem;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+  
   
   
