@@ -31,5 +31,4 @@ jobs:
           context: ./${{ matrix.component }}
           file: ./${{ matrix.component }}/Dockerfile
           push: true
-          tags: yourdockerhubusername/activequest-${{ matrix.component || toLower }}:latest
-
+          tags: yourdockerhubusername/activequest-${{ matrix.component }}:latest
