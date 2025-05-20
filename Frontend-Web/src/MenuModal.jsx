@@ -1,3 +1,4 @@
+// src/components/MenuModal.jsx
 import React, { useState, useEffect } from "react";
 import "./MenuModal.css";
 
@@ -11,69 +12,58 @@ const THEME_OPTIONS = [
 ];
 
 const MenuModal = ({ onClose }) => {
-  const [theme, setTheme] = useState(
-    localStorage.getItem("theme") || "green"
-  );
-  const [view, setView] = useState("login");
-  const [email, setEmail] = useState("");
+  const [theme, setTheme]       = useState(localStorage.getItem("theme") || "green");
+  const [view, setView]         = useState("login");
+  const [firstName, setFirst]   = useState("");
+  const [lastName,  setLast]    = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [confirm, setConfirm]   = useState("");
 
-  // Apply and persist theme
+  // Apply & persist theme
   useEffect(() => {
-    THEME_OPTIONS.forEach(t =>
-      document.body.classList.remove(`theme-${t.value}`)
-    );
+    THEME_OPTIONS.forEach(t => document.body.classList.remove(`theme-${t.value}`));
     document.body.classList.add(`theme-${theme}`);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Handle login form submission
-  const handleLogin = async (e) => {
+  // LOGIN handler
+  const handleLogin = async e => {
     e.preventDefault();
     if (!email || !password) return;
     try {
-      const res = await fetch(
-        "http://activequest.ddns.net:3000/user/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetch("/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
       const data = await res.json();
-      if (res.ok) {
-        // Successful login: refresh or redirect as needed
-        window.location.reload();
-      } else {
-        alert(data.message || "Login failed");
-      }
+      if (res.ok) window.location.reload();
+      else alert(data.message || "Login failed");
     } catch {
       alert("Server error during login");
     }
   };
 
-  // Handle registration form submission
-  const handleRegister = async (e) => {
+  // REGISTER handler
+  const handleRegister = async e => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!firstName || !lastName || !email || !password) return;
     if (password !== confirm) {
       alert("Passwords must match");
       return;
     }
     try {
-      const res = await fetch(
-        "http://activequest.ddns.net:3000/user/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetch("/users/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, password }),
+      });
       const data = await res.json();
       if (res.ok) {
         alert("Registration successful! Please log in.");
         setView("login");
+        setFirst(""); setLast(""); setEmail(""); setPassword(""); setConfirm("");
       } else {
         alert(data.message || "Registration failed");
       }
@@ -86,54 +76,33 @@ const MenuModal = ({ onClose }) => {
     <>
       <div className="overlay" onClick={onClose} />
       <div className="modal">
-
-        {/* Login / Register forms */}
         {view === "login" ? (
           <form className="auth-form" onSubmit={handleLogin}>
             <h3>Login</h3>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
+            <input type="email"    placeholder="Email"    value={email}    onChange={e => setEmail(e.target.value)} />
+            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
             <button type="submit">Login</button>
             <p>
-              Don’t have an account?{' '}
-              <span className="switch-view" onClick={() => setView("register")}>Register</span>
+              Don’t have an account?{" "}
+              <span className="switch-view" onClick={() => setView("register")}>
+                Register
+              </span>
             </p>
           </form>
         ) : (
           <form className="auth-form" onSubmit={handleRegister}>
             <h3>Register</h3>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Confirm Password"
-              value={confirm}
-              onChange={e => setConfirm(e.target.value)}
-            />
+            <input type="text"    placeholder="First Name"        value={firstName} onChange={e => setFirst(e.target.value)} />
+            <input type="text"    placeholder="Last Name"         value={lastName}  onChange={e => setLast(e.target.value)} />
+            <input type="email"   placeholder="Email"             value={email}     onChange={e => setEmail(e.target.value)} />
+            <input type="password" placeholder="Password"         value={password}  onChange={e => setPassword(e.target.value)} />
+            <input type="password" placeholder="Confirm Password" value={confirm}   onChange={e => setConfirm(e.target.value)} />
             <button type="submit">Register</button>
             <p>
-              Already have an account?{' '}
-              <span className="switch-view" onClick={() => setView("login")}>Login</span>
+              Already have an account?{" "}
+              <span className="switch-view" onClick={() => setView("login")}>
+                Login
+              </span>
             </p>
           </form>
         )}
@@ -151,7 +120,6 @@ const MenuModal = ({ onClose }) => {
           ))}
         </div>
 
-        {/* Close button */}
         <button className="close-btn" onClick={onClose}>
           Close
         </button>
