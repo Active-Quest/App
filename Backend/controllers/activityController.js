@@ -68,6 +68,7 @@ module.exports = {
                 endTime: req.body.endTime,
                 duration: req.body.duration,
                 distance: req.body.distance,
+                waypoints: req.body.waypoints
                 /*
                 
                 */
