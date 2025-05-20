@@ -1,4 +1,7 @@
 var UserModel = require('../models/userModel.js');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * userController.js
@@ -178,6 +181,43 @@ module.exports = {
 
             return res.status(201).json({});
         }
+        }catch(err){
+            return next(err);
+        }
+    },
+
+    mobileLogin: async function(req,res,next){
+        try{
+            const { email , password } = req.body;
+
+            if(!email || !password){
+                return res.status(400).json({
+                    message:'Email and password are required!'
+                });
+            }
+
+            const user = await UserModel.findOne({email:email});
+
+            if(!user){
+                return res.status(404).json({
+                    message:'User not found'
+                });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return res.status(401).json({
+                     message: 'Invalid credentials' 
+                });
+            }
+
+            const token = jwt.sign(
+                {id: user._id,email:user.email},
+                JWT_SECRET,
+                {expiresIn : '7d'}
+            );
+
+            return res.json({token,user:{id:user._id,email:user.email,firstName:user.firstName,lastName:user.lastName}});
         }catch(err){
             return next(err);
         }
