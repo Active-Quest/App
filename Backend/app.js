@@ -9,9 +9,12 @@ const session      = require("express-session");
 const MongoStore   = require("connect-mongo");
 
 // Routers
-const indexRouter     = require("./routes/index");
-const usersRouter     = require("./routes/userRoutes");
-const activitysRouter = require("./routes/activityRoutes");
+
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/userRoutes');
+var activitiesRouter = require('./routes/activityRoutes');
+var eventsRouter = require('./routes/eventRoutes');
+
 
 const app = express();
 
@@ -73,9 +76,13 @@ app.use((req, res, next) => {
 // ——————————————
 // 5) Route bindings
 // ——————————————
-app.use("/",         indexRouter);
-app.use("/users",    usersRouter);
-app.use("/activitys",activitysRouter);
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+app.use('/activities', activitiesRouter);
+app.use('/events', eventsRouter);
+
+
+
 
 // ——————————————
 // 6) 404 handler
