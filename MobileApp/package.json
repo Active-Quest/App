@@ -1,7 +1,7 @@
 {
   "name": "mobileapp",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -22,7 +22,8 @@
     "react-native-url-polyfill": "^2.0.0",
     "stream-browserify": "^3.0.0",
     "url": "^0.11.4",
-    "util": "^0.12.5"
+    "util": "^0.12.5",
+    "expo-router": "~5.0.7"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
