@@ -2,22 +2,24 @@ var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
 var activitySchema = new Schema({
-	'title' : String,
-	'createdBy' : {
+	'userId' : {
 	 	type: Schema.Types.ObjectId,
 	 	ref: 'user'
 	},
-	'type' : String,
+	'eventId' : {
+	 	type: Schema.Types.ObjectId,
+	 	ref: 'event'
+	},
 	'startTime' : Date,
-	'endTime' : Date,
 	'duration' : String,
 	'distance' : String,
-	/*
-	'waypoints' : {
-		type: Location,
-		default : []
-	}
-	*/
+	'waypoints' : [{
+		lat : String,
+		lon : String,
+		alt : String,
+		time : Date
+	}],
+	'avgSpeed' : Number,
 	});
 
 var Activity = mongoose.model('activity', activitySchema);
