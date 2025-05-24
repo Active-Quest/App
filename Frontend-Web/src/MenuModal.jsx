@@ -29,7 +29,7 @@ const MenuModal = ({ onClose }) => {
     useEffect(() => {
         const checkUser = async () => {
             try {
-                const res = await fetch("/users/me", {
+                const res = await fetch("http://activequest.ddns.net:3002/users/me", {
                     credentials: "include"
                 });
                 if (res.ok) {
@@ -47,7 +47,7 @@ const MenuModal = ({ onClose }) => {
         e.preventDefault();
         if (!email || !password) return;
         try {
-            const res = await fetch("/users/login", {
+            const res = await fetch("http://activequest.ddns.net:3002/users/login", {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -73,7 +73,7 @@ const MenuModal = ({ onClose }) => {
             return;
         }
         try {
-            const res = await fetch("/users/register", {
+            const res = await fetch("http://activequest.ddns.net:3002/users/register", {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ const MenuModal = ({ onClose }) => {
                         <h3>Welcome, {user.firstName}!</h3>
                         <img src={user.profileImage || "/default-avatar.png"} alt="Profile" className="profile-picture" />
                         <button onClick={() => {
-                            fetch("/users/logout", {
+                            fetch("http://activequest.ddns.net:3002/users/logout", {
                                 method: "GET",
                                 credentials: "include"
                             }).then(() => {
