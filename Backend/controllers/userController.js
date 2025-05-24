@@ -225,7 +225,8 @@ module.exports = {
             return res.json({token,user:{id:user._id,email:user.email,firstName:user.firstName,lastName:user.lastName}});
         }catch(err){
             return next(err);
-        },
+        }
+    },
       
     me: async function(req, res) {
         if (req.session && req.session.user) {
