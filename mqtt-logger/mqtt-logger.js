@@ -44,7 +44,7 @@ mqttClient.on('message', async (topic, message) => {
       const data = JSON.parse(message.toString());
   
       const activityId = data.activityId?.toString();
-      const userId = data.userID?.toString();
+      const userId = data.userId?.toString();
   
       if (!activityId || !userId) {
         console.error('Missing activityId or userID in message');
