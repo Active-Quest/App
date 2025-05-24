@@ -34,7 +34,7 @@ export default function Index(){
                 <TouchableOpacity style={styles.button} onPress={() => linkTo('./login')}>
                     <Text style={styles.buttonText}>Login</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => console.log('Register pressed!')}>
+                <TouchableOpacity style={styles.button} onPress={() => linkTo('./register')}>
                     <Text style={styles.buttonText}>Register</Text>
                 </TouchableOpacity>
             </>

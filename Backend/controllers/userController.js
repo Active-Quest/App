@@ -225,13 +225,41 @@ module.exports = {
             return res.json({token,user:{id:user._id,email:user.email,firstName:user.firstName,lastName:user.lastName}});
         }catch(err){
             return next(err);
-        },
+        }
+    },
       
     me: async function(req, res) {
         if (req.session && req.session.user) {
             return res.json({ user: req.session.user });
         }
         return res.status(401).json({ message: "Not logged in" });
+    },
+
+    checkEmail: async function (req, res) {
+        const mail = req.params.mail;
+
+        try {
+            const user = await UserModel.findOne({ email: mail });
+
+            if (user) {
+            return res.status(200).json({
+                exists: true,
+                message: 'Email already in use.'
+            });
+            }  
+            
+            return res.status(404).json({
+            exists: false,
+            message: 'Email is available.'
+            }); 
+
+            return res.json(user);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting user.',
+                error: err.message || err
+            });
+        }
     },
     
     
