@@ -77,7 +77,7 @@ mqttClient.on('message', async (topic, message) => {
           avgSpeed: 0
         });
   
-        await newActivity.create();
+        await newActivity.save();
         console.log(`Created new activity: ${activityId}`);
       }
     } catch (err) {
