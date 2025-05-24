@@ -65,13 +65,19 @@ export default function App() {
           if(!activityId){
             await makeActivityId();
           }
-          for(let i = 0; i < 10; i++){
-            setTimeout(()=>{
-              //console.log(user?.id, "  ACTIVITY:", activityId)
-              sendLocation(user?.id, activityId);
-            },2000);
-         }
+          let count = 0;
+
+          const interval = setInterval(()=>{
+            //console.log(user?.id, "  ACTIVITY:", activityId)
+            sendLocation(user?.id, activityId);
+            count++;
+
+            if(count>9){
+              clearInterval(interval);  
+            }
+          },2000);
         }
+
         doingActivity();
         }} />
     </SafeAreaView>
