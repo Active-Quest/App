@@ -138,21 +138,26 @@ module.exports = {
     },
 
     login: async function(req, res, next){
-        try{
-            const user=await UserModel.authenticate(req.body.email, req.body.password);
-                if(!user){
-                    var err = new Error('Wrong email or password');
-                    err.status = 401;
-                    throw err;
-                }
-                req.session.userId = user._id;
-                //res.redirect('/users/profile');
-                return res.json({
-                    status:"success",
-                    data:user
-                });
-
-        }catch(err){
+        try {
+            const user = await UserModel.authenticate(req.body.email, req.body.password);
+            if (!user) {
+                const err = new Error('Wrong email or password');
+                err.status = 401;
+                throw err;
+            }
+    
+            req.session.userId = user._id;
+            req.session.user = {
+                firstName: user.firstName,
+                profileImage: user.profileImage || null
+            };
+    
+            return res.json({
+                status: "success",
+                data: user
+            });
+    
+        } catch (err) {
             return next(err);
         }
     },
@@ -220,6 +225,14 @@ module.exports = {
             return res.json({token,user:{id:user._id,email:user.email,firstName:user.firstName,lastName:user.lastName}});
         }catch(err){
             return next(err);
+        },
+      
+    me: async function(req, res) {
+        if (req.session && req.session.user) {
+            return res.json({ user: req.session.user });
         }
-    }
+        return res.status(401).json({ message: "Not logged in" });
+    },
+    
+    
 };

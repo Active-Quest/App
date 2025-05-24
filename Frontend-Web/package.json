@@ -1,6 +1,7 @@
 {
   "name": "frontend-web",
   "version": "0.1.0",
+  "proxy": "http://activequest.ddns.net:3002",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
