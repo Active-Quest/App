@@ -1,6 +1,5 @@
 // backend/app.js
 require('dotenv').config();
-
 const express       = require('express');
 const path          = require('path');
 const logger        = require('morgan');
@@ -19,9 +18,12 @@ mongoose
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-const indexRouter     = require('./routes/index');
-const usersRouter     = require('./routes/userRoutes');
-const activitysRouter = require('./routes/activityRoutes');
+// Routers
+
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/userRoutes');
+var activitiesRouter = require('./routes/activityRoutes');
+var eventsRouter = require('./routes/eventRoutes');
 
 const app = express();
 
@@ -54,10 +56,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mount routes
-app.use('/',        indexRouter);
-app.use('/users',   usersRouter);
-app.use('/activitys', activitysRouter);
+
+// ——————————————
+// 5) Route bindings
+// ——————————————
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+app.use('/activities', activitiesRouter);
+app.use('/events', eventsRouter);
+
 
 // 404 catch
 app.use((req, res) => {

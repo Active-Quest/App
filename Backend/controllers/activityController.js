@@ -61,16 +61,13 @@ module.exports = {
     create: async function (req, res) {
         try {
             const activity = new ActivityModel({
-                title: req.body.title,
-                createdBy: req.body.userid,
-                type: req.body.type,
+                userId: req.body.userId,
+                eventId: req.body.eventId,
                 startTime: req.body.startTime,
-                endTime: req.body.endTime,
                 duration: req.body.duration,
                 distance: req.body.distance,
-                /*
-                
-                */
+                waypoints: req.body.waypoints,
+                avgSpeed: req.body.avgSpeed,
             });
 
             const savedActivity = await activity.save();
@@ -101,7 +98,6 @@ module.exports = {
             }
 
             activity.title = req.body.title ? req.body.title : activity.title;
-            activity.type = req.body.type ? req.body.type : activity.type;
                 
             try {
                 const savedActivity = await activity.save();
