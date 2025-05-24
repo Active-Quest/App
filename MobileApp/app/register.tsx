@@ -9,10 +9,21 @@ export default function Register(){
     const [password,setPassword] = React.useState('');
     const [confirmPassword,setConfirmPassword] = React.useState('');
     const navigation = useNavigation();
-    async function sendRegisterRequest(firstName : String,lastName : String,email : String,password : String,confirmPassword : String){
+    async function sendRegisterRequest(firstName : String,lastName : String,email : string,password : string,confirmPassword : String){
     if(firstName.length < 1 || lastName.length < 1 || email.length < 1 || password.length < 1 || confirmPassword.length < 1){
         return
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+
+    if(!passwordRegex.test(password)){
+        return
+    }
+    if(!emailRegex.test(email)){
+        return
+    }
+
     if(password!=confirmPassword){
         return
     }
@@ -81,7 +92,7 @@ export default function Register(){
                     style={styles.textInput}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={true}
-                    placeholder="Password"
+                    placeholder="Confirm Password"
                 ></TextInput>
 
                 
