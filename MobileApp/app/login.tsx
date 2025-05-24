@@ -1,16 +1,18 @@
 import React from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity, TextInput, SafeAreaView} from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Login(){
     const [email,setEmail] = React.useState('');
     const [password,setPassword] = React.useState('');
-
+    const navigation = useNavigation();
     async function sendLoginRequest(email : String,password : String){
     if(email.length < 1 || password.length < 1){
         return
     }
 
-    const res = await fetch('http://activequest.ddns.net:3000/users/login',{
+    const res = await fetch('http://activequest.ddns.net:3000/users/mobile-login',{
         method:'POST',
         headers:{
             'Content-Type' : 'application/json'
@@ -21,9 +23,20 @@ export default function Login(){
         })
     });
 
-    const data = await res.json();
+    if(!res.ok){
+        const err = await res.json();
+        alert(err.message || 'Login failed');
+        return;
+    }
 
-    console.log(data);
+    const {token,user} = await res.json();
+
+    //saving token into storage
+    await AsyncStorage.setItem('token',token);
+
+    //save user into storage as well
+    await AsyncStorage.setItem('user',JSON.stringify(user));
+    navigation.goBack();
 }
 
     return(
@@ -46,8 +59,8 @@ export default function Login(){
 
                 <Text style={styles.registerText} onPress={()=>console.log('redirect to register')}>Don't have an account? Create one</Text>
                 
-                <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText} onPress={()=>sendLoginRequest(email,password)}>Login</Text>
+                <TouchableOpacity style={styles.button} onPress={()=>sendLoginRequest(email,password)}>
+                    <Text style={styles.buttonText}>Login</Text>
                 </TouchableOpacity>
             </View>
         </View>
