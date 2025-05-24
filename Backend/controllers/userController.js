@@ -231,8 +231,8 @@ module.exports = {
     me: async function(req, res) {
         if (req.session && req.session.user) {
             return res.json({ user: req.session.user });
+
         }
-        return res.status(401).json({ message: "Not logged in" });
     },
 
     checkEmail: async function (req, res) {
@@ -261,6 +261,7 @@ module.exports = {
             });
         }
     },
+
     
     
 };

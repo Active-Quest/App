@@ -1,15 +1,17 @@
 import { linkTo } from "expo-router/build/global-state/routing";
-import React, {useState,useEffect} from "react";
+import React, {useState,useEffect, useCallback} from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity, ActivityIndicator} from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logout } from "../authUtils";
+import { useFocusEffect } from "expo-router";
 
 export default function Index(){
    const [isLoading, setIsLoading] = useState(true);
     const [authenticated, setAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
 
-    useEffect(()=>{
+    useFocusEffect(
+        useCallback(()=>{
         const checkAuth = async()=>{
             const token = await AsyncStorage.getItem('token');
             const userData = await AsyncStorage.getItem('user');
@@ -21,8 +23,9 @@ export default function Index(){
             setIsLoading(false);
         };
 
-        checkAuth();
-    },[])
+            checkAuth();
+        },[])
+    );
     if(isLoading){
         return <ActivityIndicator size="large" color="#000" />;
     }
