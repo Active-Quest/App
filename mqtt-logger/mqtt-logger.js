@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
-const Activity = require('../backend/models/activityModel');
+const Activity = require('./models/activityModel');
 
 //Load ENV Vars
 const mqttHost = process.env.MQTT_HOST;
