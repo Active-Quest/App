@@ -3,7 +3,7 @@ var Schema   = mongoose.Schema;
 
 var activitySchema = new Schema({
 	'activityId': {
-		type: string,
+		type: String,
 		required: true,
 		unique: false
 	},	  
