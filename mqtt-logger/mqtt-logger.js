@@ -51,7 +51,7 @@ mqttClient.on('message', async (topic, message) => {
         return;
       }
   
-      const existing = await Activity.findOne({ activityId });
+      const existing = await Activity.findOne({ activityId:activityId });
   
       const waypoint = {
         lat: data.latitude?.toString() || '',

@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
 var activitySchema = new Schema({
-	activityId: {
+	'activityId': {
 		type: Schema.Types.ObjectId,
 		required: true,
 		unique: false
