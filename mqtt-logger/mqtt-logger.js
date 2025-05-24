@@ -64,6 +64,7 @@ mqttClient.on('message', async (topic, message) => {
         existing.waypoints.push(waypoint);
         await existing.save();
         console.log(`Updated existing activity: ${activityId}`);
+        return
       } else {
         const newActivity = new Activity({
           activityId,
@@ -76,7 +77,7 @@ mqttClient.on('message', async (topic, message) => {
           avgSpeed: 0
         });
   
-        await newActivity.save();
+        await newActivity.create();
         console.log(`Created new activity: ${activityId}`);
       }
     } catch (err) {
