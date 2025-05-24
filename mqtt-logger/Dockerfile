@@ -1,14 +1,10 @@
 FROM node:18
-
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package*.json ./
+# Copy both the mqtt-logger and model code
+COPY mqtt-logger/. .
+COPY backend/models ./backend/models
+
 RUN npm install
 
-# Copy the rest of the code
-COPY . .
-
-# Default command to run the logger
 CMD ["node", "mqtt-logger.js"]
