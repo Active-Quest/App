@@ -3,6 +3,7 @@ import {Text, View, StyleSheet, Button, TouchableOpacity, TextInput, SafeAreaVie
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
+
 export default function Login(){
     const [email,setEmail] = React.useState('');
     const [password,setPassword] = React.useState('');
@@ -12,7 +13,7 @@ export default function Login(){
         return
     }
 
-    const res = await fetch('http://activequest.ddns.net:3000/users/mobile-login',{
+    const res = await fetch('http://activequest.ddns.net:3002/users/mobile-login',{
         method:'POST',
         headers:{
             'Content-Type' : 'application/json'
@@ -47,6 +48,7 @@ export default function Login(){
             <View style={styles.inputContainer}>
                 <TextInput 
                     style={styles.textInput}
+                    autoCapitalize="none"
                     placeholder="Email"
                     onChangeText={setEmail}
                 ></TextInput>

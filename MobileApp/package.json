@@ -13,6 +13,7 @@
     "buffer": "^6.0.3",
     "events": "^3.3.0",
     "expo": "~53.0.8",
+    "expo-crypto": "^14.1.4",
     "expo-location": "~18.1.4",
     "expo-router": "~5.0.7",
     "expo-status-bar": "~2.2.3",
