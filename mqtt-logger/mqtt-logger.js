@@ -1,7 +1,7 @@
 require('dotenv').config();
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
-const Activity = require('./models/activityModel');
+const Activity = require('./models/activityModel.js');
 
 //Load ENV Vars
 const mqttHost = process.env.MQTT_HOST;
@@ -40,27 +40,47 @@ mqttClient.on('connect', () => {
 });
 
 mqttClient.on('message', async (topic, message) => {
-  try {
-    const gps = JSON.parse(message.toString());
-
-    const activity = new Activity({
-      userId: new mongoose.Types.ObjectId(),   //Zamenjaj
-      eventId: new mongoose.Types.ObjectId(),  //Zamenjaj
-      startTime: new Date(),
-      duration: '0:01',
-      distance: '0.00',
-      waypoints: [{
-        lat: gps.latitude?.toString() || '',
-        lon: gps.longitude?.toString() || '',
-        alt: gps.altitude?.toString() || '',
+    try {
+      const data = JSON.parse(message.toString());
+  
+      const activityId = data.activityId?.toString();
+      const userId = data.userID?.toString();
+  
+      if (!activityId || !userId) {
+        console.error('Missing activityId or userID in message');
+        return;
+      }
+  
+      const existing = await Activity.findOne({ activityId });
+  
+      const waypoint = {
+        lat: data.latitude?.toString() || '',
+        lon: data.longitude?.toString() || '',
+        alt: data.altitude?.toString() || '',
         time: new Date()
-      }],
-      avgSpeed: 0
-    });
-
-    await activity.save();
-    console.log('Activity saved to MongoDB');
-  } catch (err) {
-    console.error('Failed to save message:', err.message);
-  }
-});
+      };
+  
+      if (existing) {
+        existing.waypoints.push(waypoint);
+        await existing.save();
+        console.log(`Updated existing activity: ${activityId}`);
+      } else {
+        const newActivity = new Activity({
+          activityId,
+          userId,
+          eventId: new mongoose.Types.ObjectId(),
+          startTime: new Date(),
+          duration: '0:01',
+          distance: '0.00',
+          waypoints: [waypoint],
+          avgSpeed: 0
+        });
+  
+        await newActivity.save();
+        console.log(`Created new activity: ${activityId}`);
+      }
+    } catch (err) {
+      console.error('Failed to save message:', err.message);
+    }
+  });
+  
