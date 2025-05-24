@@ -1,0 +1,43 @@
+name: Check MQTT Version
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  check-mqtt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check mqtt version in package.json
+        run: |
+          VERSION=$(node -pe "require('./MobileApp/package.json').dependencies?.mqtt || require('./package.json').devDependencies?.mqtt || ''")
+          
+          echo "Found mqtt version: $VERSION"
+
+          #Remove prefix 
+          CLEAN_VERSION=$(echo $VERSION | sed 's/[^0-9.]//g')
+
+          REQUIRED_VERSION="5.1.0"
+
+          if [ -z "$CLEAN_VERSION" ]; then
+            echo "Mqtt is not installed in dependencies!"
+            exit 1
+          fi
+
+          node -e "
+            const semver = (v) => v.split('.').map(n => parseInt(n));
+            const [a1,b1,c1] = semver('$CLEAN_VERSION');
+            const [a2,b2,c2] = semver('$REQUIRED_VERSION');
+            if (a1 > a2 || (a1 === a2 && b1 > b2) || (a1 === a2 && b1 === b2 && c1 >= c2)) {
+              console.log('Mqtt version is good.');
+            } else {
+              console.error('Mqtt version must be >= $REQUIRED_VERSION.');
+              process.exit(1);
+            }
+          "
