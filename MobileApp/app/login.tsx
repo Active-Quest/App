@@ -12,7 +12,7 @@ export default function Login(){
         return
     }
 
-    const res = await fetch('http://activequest.ddns.net:3000/users/mobile-login',{
+    const res = await fetch('http://activequest.ddns.net:3002/users/mobile-login',{
         method:'POST',
         headers:{
             'Content-Type' : 'application/json'

@@ -8,6 +8,7 @@ router.get('/', userController.list);
 router.get('/profile', userController.profile);
 router.get('/logout', userController.logout);
 router.get('/:id', userController.show);
+router.get('/:mail', userController.checkEmail);
 
 //router.post('/', userController.create);
 router.post('/register', userController.create);
