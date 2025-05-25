@@ -11,7 +11,7 @@ if (typeof globalThis.process === 'undefined') {
   globalThis.process = process;
 }
 
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaView, Button, StyleSheet } from 'react-native';
 import { connectMQTT } from '../../src/mqttClient';
 import { sendLocation } from '../../src/sendLocation';
@@ -21,28 +21,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function App() {
   const [user, setUser] = useState(null);
   const [activityId, setActivityId] = useState('');
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     connectMQTT();
   }, []);
 
-  useEffect(()=>{
-    const fetchData = async()=>{
+  useEffect(() => {
+    const fetchData = async () => {
       const userData = await AsyncStorage.getItem('user');
       const token = await AsyncStorage.getItem('token');
 
-      
-      if(userData && token){
+      if (userData && token) {
         setUser(JSON.parse(userData));
       }
 
-      //console.log('USER: ', user, "   Token: ", token);
+      setLoading(false);//Data is done loading
     };
     fetchData();
   }, []);
 
-  /*CALL THIS WHEN USER CLICKS START ACTIVITY OR WHATEVER*/
-  const makeActivityId = async()=>{
-    if(!user){
+  const makeActivityId = async () => {
+    if (!user) {
+      console.warn("User not loaded yet!");
       return;
     }
 
@@ -54,38 +55,49 @@ export default function App() {
     );
 
     setActivityId(activityId);
-    await AsyncStorage.setItem('activityId',activityId);
+    await AsyncStorage.setItem('activityId', activityId);
+    return activityId;
   };
-
 
   return (
     <SafeAreaView style={styles.container}>
-      <Button title="Send my location" onPress={()=>{
-        const doingActivity = async()=>{
-          if(!activityId){
-            await makeActivityId();
-          }
-          let count = 0;
-
-          const interval = setInterval(()=>{
-            //console.log(user?.id, "  ACTIVITY:", activityId)
-            sendLocation(user?.id, activityId);
-            count++;
-
-            if(count>9){
-              clearInterval(interval);  
+      <Button
+        title={loading ? "Loading..." : "Send my location"}
+        disabled={loading || !user}
+        onPress={() => {
+          const doingActivity = async () => {
+            if (!user) {
+              console.warn("User is not available.");
+              return;
             }
-          },2000);
-        }
+            let idToUse: string | undefined = activityId;
 
-        doingActivity();
-        }} />
+            if (!idToUse) {
+              idToUse = await makeActivityId();
+              if(!idToUse) return;
+            }
+
+            let count = 0;
+
+            const interval = setInterval(() => {
+              sendLocation(user?.id, idToUse);
+              //DEBUG IF NEEDED
+              /*console.log(`User:  ${user?.id}`);
+              console.log(`Activity:  ${idToUse}`);*/
+              count++;
+
+              if (count > 9) {
+                clearInterval(interval);
+              }
+            }, 2000);
+          };
+
+          doingActivity();
+        }}
+      />
     </SafeAreaView>
   );
 }
-
-//START ACTIVITY -> storage save sha hash (userId+eventId+time)
-//END ACTIVITY -> remove hash from storage
 
 const styles = StyleSheet.create({
   container: {

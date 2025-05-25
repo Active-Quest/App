@@ -43,9 +43,9 @@ export default function Index(){
             </>
             ):(
                 <>
-                    <Text>Welcome {user?.firstName}</Text>
+                    <Text style={{color:'#ffffff'}}>Welcome {user?.firstName}</Text>
                     <TouchableOpacity onPress={logout}>
-                        <Text>Logout</Text>
+                        <Text style={{color:'#ffffff'}}>Logout</Text>
                     </TouchableOpacity>
                 </>
             )}
