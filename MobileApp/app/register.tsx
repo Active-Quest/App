@@ -1,6 +1,8 @@
 import React from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity, TextInput, SafeAreaView} from "react-native";
 import { useNavigation } from '@react-navigation/native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import {router} from 'expo-router';
 
 export default function Register(){
     const [firstName,setFirstName] = React.useState('');
@@ -60,45 +62,52 @@ export default function Register(){
 
     navigation.goBack();
 }
-
     return(
-        <View style={styles.container}>
-            <View>
-                <Text style={styles.title}>Register</Text>
-            </View>
-            <View style={styles.inputContainer}>
-                <TextInput 
-                    style={styles.textInput}
-                    placeholder="First Name"
-                    onChangeText={setFirstName}
-                ></TextInput>
-                <TextInput 
-                    style={styles.textInput}
-                    placeholder="Last Name"
-                    onChangeText={setLastName}
-                ></TextInput>
-                <TextInput 
-                    style={styles.textInput}
-                    placeholder="Email"
-                    onChangeText={setEmail}
-                ></TextInput>
-                <TextInput 
-                    style={styles.textInput}
-                    onChangeText={setPassword}
-                    secureTextEntry={true}
-                    placeholder="Password"
-                ></TextInput>
-                <TextInput 
-                    style={styles.textInput}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={true}
-                    placeholder="Confirm Password"
-                ></TextInput>
-
-                
-                <TouchableOpacity style={styles.button} onPress={()=>sendRegisterRequest(firstName,lastName,email,password,confirmPassword)}>
-                    <Text style={styles.buttonText}>Register</Text>
+        <View style={styles.background}>
+            <View style={styles.iconContainer}>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <FontAwesome name="angle-left" size={24} color="#000000" />
                 </TouchableOpacity>
+            </View>
+
+            <View style={styles.container}>
+                <View>
+                    <Text style={styles.title}>Register</Text>
+                </View>
+                <View style={styles.inputContainer}>
+                    <TextInput 
+                        style={styles.textInput}
+                        placeholder="First Name"
+                        onChangeText={setFirstName}
+                    ></TextInput>
+                    <TextInput 
+                        style={styles.textInput}
+                        placeholder="Last Name"
+                        onChangeText={setLastName}
+                    ></TextInput>
+                    <TextInput 
+                        style={styles.textInput}
+                        placeholder="Email"
+                        onChangeText={setEmail}
+                    ></TextInput>
+                    <TextInput 
+                        style={styles.textInput}
+                        onChangeText={setPassword}
+                        secureTextEntry={true}
+                        placeholder="Password"
+                    ></TextInput>
+                    <TextInput 
+                        style={styles.textInput}
+                        onChangeText={setConfirmPassword}
+                        secureTextEntry={true}
+                        placeholder="Confirm Password"
+                    ></TextInput>
+
+                    
+                    <TouchableOpacity style={styles.button} onPress={()=>sendRegisterRequest(firstName,lastName,email,password,confirmPassword)}>
+                        <Text style={styles.buttonText}>Register</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
@@ -137,6 +146,16 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontWeight: 'bold',
+    },
+    iconContainer:{
+        flexDirection:'row',
+        alignItems:'flex-start',
+        paddingLeft:10
+    },
+    background:{
+        flex:1,
+        backgroundColor:'#ffffff',
+        paddingTop:80,
     }
 });
 
