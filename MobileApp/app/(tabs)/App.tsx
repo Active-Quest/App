@@ -11,12 +11,13 @@ if (typeof globalThis.process === 'undefined') {
   globalThis.process = process;
 }
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView, Button, StyleSheet } from 'react-native';
 import { connectMQTT } from '../../src/mqttClient';
 import { sendLocation } from '../../src/sendLocation';
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -27,8 +28,10 @@ export default function App() {
     connectMQTT();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  
+  useFocusEffect( //Every time when this activity is focused fetch the token and user
+    useCallback(()=>{
+      const fetchData = async () => {
       const userData = await AsyncStorage.getItem('user');
       const token = await AsyncStorage.getItem('token');
 
@@ -39,7 +42,8 @@ export default function App() {
       setLoading(false);//Data is done loading
     };
     fetchData();
-  }, []);
+    },[])
+  );
 
   const makeActivityId = async () => {
     if (!user) {
@@ -66,6 +70,7 @@ export default function App() {
         disabled={loading || !user}
         onPress={() => {
           const doingActivity = async () => {
+            //console.log('clicked');
             if (!user) {
               console.warn("User is not available.");
               return;
