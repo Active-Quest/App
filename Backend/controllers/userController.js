@@ -139,28 +139,31 @@ module.exports = {
 
     login: async function(req, res, next){
         try {
-            const user = await UserModel.authenticate(req.body.email, req.body.password);
+            const { email, password } = req.body;
+    
+            const user = await UserModel.findOne({ email });
             if (!user) {
-                const err = new Error('Wrong email or password');
-                err.status = 401;
-                throw err;
+                return res.status(404).json({ message: 'User not found' });
             }
     
-            req.session.userId = user._id;
-            req.session.user = {
-                firstName: user.firstName,
-                profileImage: user.profileImage || null
-            };
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
     
-            return res.json({
-                status: "success",
-                data: user
-            });
+            const token = jwt.sign(
+                { id: user._id, email: user.email },
+                JWT_SECRET,
+                { expiresIn: '7d' }
+            );
+    
+            return res.json({ token, user });
     
         } catch (err) {
             return next(err);
         }
     },
+    
     
     profile: async function(req, res, next) {
         try {
@@ -229,10 +232,31 @@ module.exports = {
     },
       
     me: async function(req, res) {
-        if (req.session && req.session.user) {
-            return res.json({ user: req.session.user });
+        try {
+            const authHeader = req.headers.authorization;
+            const token = authHeader && authHeader.split(' ')[1]; // Expecting: "Bearer <token>"
+    
+            if (!token) {
+                return res.status(401).json({ message: 'Token missing' });
+            }
+    
+            const decoded = jwt.verify(token, JWT_SECRET);
+    
+            const user = await UserModel.findById(decoded.id);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+    
+            return res.json({
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName
+            });
+    
+        } catch (err) {
+            return res.status(401).json({ message: 'Invalid token', error: err.message });
         }
-        return res.status(401).json({ message: "Not logged in" });
     },
     
     
