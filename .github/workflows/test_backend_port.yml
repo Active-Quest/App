@@ -1,0 +1,22 @@
+name: Check Backend Port
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  check-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check server response
+        run: |
+          echo "Pinging server at http://activequest.ddns.net:3002"
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://activequest.ddns.net:3002)
+          echo "Status code: $STATUS_CODE"
+          if [ "$STATUS_CODE" -ne 200 ]; then
+            echo "Server is not responding with 200 (OK)."
+            exit 1
+          fi
+          echo "Server is running on port 3002 and responding correctly."
