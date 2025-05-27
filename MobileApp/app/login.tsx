@@ -2,12 +2,15 @@ import React from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity, TextInput, SafeAreaView} from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-
+import { useAuth } from "./authContext";
+import {router} from 'expo-router';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 export default function Login(){
     const [email,setEmail] = React.useState('');
     const [password,setPassword] = React.useState('');
     const navigation = useNavigation();
+    const {login} = useAuth();
     async function sendLoginRequest(email : String,password : String){
     if(email.length < 1 || password.length < 1){
         return
@@ -32,38 +35,50 @@ export default function Login(){
 
     const {token,user} = await res.json();
 
-    //saving token into storage
+    /*//saving token into storage
     await AsyncStorage.setItem('token',token);
 
     //save user into storage as well
-    await AsyncStorage.setItem('user',JSON.stringify(user));
+    await AsyncStorage.setItem('user',JSON.stringify(user));*/
+
+    //Simpler way..
+    await login(user, token);
+
+
     navigation.goBack();
 }
 
     return(
-        <View style={styles.container}>
-            <View>
-                <Text style={styles.title}>Login</Text>
-            </View>
-            <View style={styles.inputContainer}>
-                <TextInput 
-                    style={styles.textInput}
-                    autoCapitalize="none"
-                    placeholder="Email"
-                    onChangeText={setEmail}
-                ></TextInput>
-                <TextInput 
-                    style={styles.textInput}
-                    onChangeText={setPassword}
-                    secureTextEntry={true}
-                    placeholder="Password"
-                ></TextInput>
-
-                <Text style={styles.registerText} onPress={()=>console.log('redirect to register')}>Don't have an account? Create one</Text>
-                
-                <TouchableOpacity style={styles.button} onPress={()=>sendLoginRequest(email,password)}>
-                    <Text style={styles.buttonText}>Login</Text>
+        <View style={styles.background}>
+            <View style={styles.iconContainer}>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <FontAwesome name="angle-left" size={24} color="#000000" />
                 </TouchableOpacity>
+            </View>
+            <View style={styles.container}>
+                <View>
+                    <Text style={styles.title}>Login</Text>
+                </View>
+                <View style={styles.inputContainer}>
+                    <TextInput 
+                        style={styles.textInput}
+                        autoCapitalize="none"
+                        placeholder="Email"
+                        onChangeText={setEmail}
+                    ></TextInput>
+                    <TextInput 
+                        style={styles.textInput}
+                        onChangeText={setPassword}
+                        secureTextEntry={true}
+                        placeholder="Password"
+                    ></TextInput>
+
+                    <Text style={styles.registerText} onPress={()=>console.log('redirect to register')}>Don't have an account? Create one</Text>
+                    
+                    <TouchableOpacity style={styles.button} onPress={()=>sendLoginRequest(email,password)}>
+                        <Text style={styles.buttonText}>Login</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
@@ -105,6 +120,16 @@ const styles = StyleSheet.create({
     },
     registerText:{
         color: '#334455'
+    },
+    background:{
+        flex:1,
+        backgroundColor:'#ffffff',
+        paddingTop:80
+    },
+    iconContainer:{
+        flexDirection:'row',
+        alignItems:'flex-start',
+        paddingLeft:10
     }
 });
 

@@ -1,11 +1,11 @@
+import { Slot } from 'expo-router';
+import { AuthProvider } from './authContext';
 import React from 'react';
-import { Stack } from 'expo-router';
 
-export default function TabsLayout(){
-    return (
-        <Stack>
-            <Stack.Screen name='(tabs)' options={{headerShown:false}}/>
-        </Stack>
-    );
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <Slot />
+    </AuthProvider>
+  );
 }
-

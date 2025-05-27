@@ -1,56 +1,13 @@
-import { linkTo } from "expo-router/build/global-state/routing";
 import React, {useState,useEffect, useCallback} from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity, ActivityIndicator} from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logout } from "../authUtils";
-import { useFocusEffect } from "expo-router";
+
 
 export default function Index(){
-   const [isLoading, setIsLoading] = useState(true);
-    const [authenticated, setAuthenticated] = useState(false);
-    const [user, setUser] = useState(null);
-
-    useFocusEffect(
-        useCallback(()=>{
-        const checkAuth = async()=>{
-            const token = await AsyncStorage.getItem('token');
-            const userData = await AsyncStorage.getItem('user');
-
-            if(token && userData){
-                setAuthenticated(true);
-                setUser(JSON.parse(userData));
-            }
-            setIsLoading(false);
-        };
-
-            checkAuth();
-        },[])
-    );
-    if(isLoading){
-        return <ActivityIndicator size="large" color="#000" />;
-    }
-
-    return(
-        <View style={styles.container}>
-            {!authenticated ? (
-            <>
-                <TouchableOpacity style={styles.button} onPress={() => linkTo('./login')}>
-                    <Text style={styles.buttonText}>Login</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => linkTo('./register')}>
-                    <Text style={styles.buttonText}>Register</Text>
-                </TouchableOpacity>
-            </>
-            ):(
-                <>
-                    <Text style={{color:'#ffffff'}}>Welcome {user?.firstName}</Text>
-                    <TouchableOpacity onPress={logout}>
-                        <Text style={{color:'#ffffff'}}>Logout</Text>
-                    </TouchableOpacity>
-                </>
-            )}
-        </View>
-    );
+   return(
+    <View style={styles.container}>
+        <Text>WELCOME TO ACTIVE QUEST</Text>
+   </View>
+   );
 }
 
 const styles = StyleSheet.create({
@@ -58,8 +15,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        gap:10,
-        backgroundColor: '#212121'
+        gap:10
     },
     button: {
         backgroundColor: '#4CAF50',
@@ -68,7 +24,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     buttonText: {
-         color: '#fff',
+        color: '#fff',
         fontWeight: 'bold',
     }
 });
