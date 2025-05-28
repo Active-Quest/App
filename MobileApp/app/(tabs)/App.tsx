@@ -10,7 +10,7 @@ if (typeof globalThis.process === 'undefined') {
   globalThis.process = process;
 }
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SafeAreaView, Button, StyleSheet } from 'react-native';
 import { connectMQTT } from '../../src/mqttClient';
 import { sendLocation } from '../../src/sendLocation';
@@ -25,6 +25,7 @@ export default function App() {
   const [activityId, setActivityId] = useState('');
   const [loading, setLoading] = useState(true);
   const [userDoingActivity, setUserDoingActivity] = useState(false);
+  const userDoingActivityRef = useRef(false);
   
   /*FOR MAP*/
   const [path,setPath] = useState<{ latitude:number;longitude:number}[]>([]);
@@ -98,11 +99,11 @@ export default function App() {
       </MapView>
 
       <Button
-        title={loading ? "Loading..." : "Send my location"}
+        title={userDoingActivity ? "Stop" : "Start"}
         disabled={loading || !user}
         onPress={() => {
+          //console.log(userDoingActivity);
           const doingActivity = async () => {
-            //console.log('clicked');
             if (!user) {
               console.warn("User is not available.");
               return;
@@ -114,7 +115,12 @@ export default function App() {
               if(!idToUse) return;
             }
 
-            let count = 0;
+            const newState = !userDoingActivity;
+            setUserDoingActivity(newState);
+            userDoingActivityRef.current = newState;
+
+            if(!newState) return; //If we just stopped dont start the interval
+            
 
             const interval = setInterval(async() => {
               let location = await sendLocation(user?.id, idToUse);//Wait for data from function
@@ -127,14 +133,14 @@ export default function App() {
               //DEBUG IF NEEDED
               /*console.log(`User:  ${user?.id}`);
               console.log(`Activity:  ${idToUse}`);*/
-              count++;
+              
 
-              if (count > 9) {
+              if (!userDoingActivityRef.current) {
                 clearInterval(interval);
               }
-            }, 2000);
+            }, 10000);
           };
-
+          
           doingActivity();
         }}
       />
