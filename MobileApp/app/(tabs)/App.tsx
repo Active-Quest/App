@@ -2,7 +2,6 @@ import { Buffer } from 'buffer';
 import process from 'process';
 import 'react-native-url-polyfill/auto';
 import * as Crypto from 'expo-crypto';
-
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
 }
@@ -18,11 +17,18 @@ import { sendLocation } from '../../src/sendLocation';
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
+import MapView, { Polyline, Marker } from 'react-native-maps'; /*MAP IMPORT*/
+
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [activityId, setActivityId] = useState('');
   const [loading, setLoading] = useState(true);
+  const [userDoingActivity, setUserDoingActivity] = useState(false);
+  
+  /*FOR MAP*/
+  const [path,setPath] = useState<{ latitude:number;longitude:number}[]>([]);
+  const [currentLocation,setCurrentLocation] = useState(null);
 
   useEffect(() => {
     connectMQTT();
@@ -65,6 +71,32 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
+
+      <MapView
+      style={{flex:1}}
+      initialRegion={{
+        latitude: path[0]?.latitude || 46.3127862,
+        longitude: path[0]?.longitude || 13.992352,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }}
+      region = {
+        currentLocation ? {
+          ...currentLocation,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        }
+        :undefined
+      }
+      >
+        {path.length > 0 &&(
+          <>
+            <Polyline coordinates={path} strokeColor='blue' strokeWidth={4}/>
+            <Marker coordinate={path[path.length -1]}/>
+          </>
+        )}
+      </MapView>
+
       <Button
         title={loading ? "Loading..." : "Send my location"}
         disabled={loading || !user}
@@ -84,8 +116,14 @@ export default function App() {
 
             let count = 0;
 
-            const interval = setInterval(() => {
-              sendLocation(user?.id, idToUse);
+            const interval = setInterval(async() => {
+              let location = await sendLocation(user?.id, idToUse);//Wait for data from function
+              if(location?.latitude && location?.longitude){
+                setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
+                setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
+              }
+              
+              
               //DEBUG IF NEEDED
               /*console.log(`User:  ${user?.id}`);
               console.log(`Activity:  ${idToUse}`);*/

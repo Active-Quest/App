@@ -20,4 +20,9 @@ export const sendLocation = async (userId : String, activityId : String) => {
     longitude: coords.longitude,
     altitude: coords.altitude
   }));
+
+  let latitude = coords.latitude;
+  let longitude = coords.longitude;
+  //Return the location data for the map back on our App.tsx
+  return {latitude,longitude};
 };
