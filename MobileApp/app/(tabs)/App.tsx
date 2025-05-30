@@ -11,7 +11,7 @@ if (typeof globalThis.process === 'undefined') {
 }
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SafeAreaView, Button, StyleSheet } from 'react-native';
+import { SafeAreaView, Button, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { connectMQTT } from '../../src/mqttClient';
 import { sendLocation } from '../../src/sendLocation';
 import React from 'react';
@@ -119,6 +119,7 @@ export default function App() {
         :undefined
       }
       showsUserLocation
+      showsMyLocationButton
       >
         {path.length > 0 &&(
           <>
@@ -128,53 +129,57 @@ export default function App() {
           </>
         )} 
       </MapView>
+      
+      <View style={{ alignItems: 'center'}}>
+        <TouchableOpacity
+          style={[styles.activityButton, userDoingActivityRef.current ? styles.stopButton : styles.startButton]}
+          disabled={loading || !user}
+          onPress={() => {
+            //console.log(userDoingActivity);
+            const doingActivity = async () => {
+              if (!user) {
+                console.warn("User is not available.");
+                return;
+              }
+              let idToUse: string | undefined = activityId;
 
-      <Button
-        title={userDoingActivity ? "Stop" : "Start"}
-        disabled={loading || !user}
-        onPress={() => {
-          //console.log(userDoingActivity);
-          const doingActivity = async () => {
-            if (!user) {
-              console.warn("User is not available.");
-              return;
-            }
-            let idToUse: string | undefined = activityId;
+              if (!idToUse) {
+                idToUse = await makeActivityId();
+                if(!idToUse) return;
+              }
 
-            if (!idToUse) {
-              idToUse = await makeActivityId();
-              if(!idToUse) return;
-            }
+              const newState = !userDoingActivity;
+              setUserDoingActivity(newState);
+              userDoingActivityRef.current = newState;
 
-            const newState = !userDoingActivity;
-            setUserDoingActivity(newState);
-            userDoingActivityRef.current = newState;
+              if(!newState) return; //If we just stopped dont start the interval
+              
 
-            if(!newState) return; //If we just stopped dont start the interval
+              const interval = setInterval(async() => {
+                let location = await sendLocation(user?.id, idToUse);//Wait for data from function
+                if(location?.latitude && location?.longitude){
+                  setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
+                  setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
+                }
+                
+                
+                //DEBUG IF NEEDED
+                /*console.log(`User:  ${user?.id}`);
+                console.log(`Activity:  ${idToUse}`);*/
+                
+
+                if (!userDoingActivityRef.current) {
+                  clearInterval(interval);
+                }
+              }, 10000);
+            };
             
-
-            const interval = setInterval(async() => {
-              let location = await sendLocation(user?.id, idToUse);//Wait for data from function
-              if(location?.latitude && location?.longitude){
-                setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
-                setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
-              }
-              
-              
-              //DEBUG IF NEEDED
-              /*console.log(`User:  ${user?.id}`);
-              console.log(`Activity:  ${idToUse}`);*/
-              
-
-              if (!userDoingActivityRef.current) {
-                clearInterval(interval);
-              }
-            }, 10000);
-          };
-          
-          doingActivity();
-        }}
-      />
+            doingActivity();
+          }}
+        >
+            <Text style={styles.buttonText}>{userDoingActivity ? "Stop" : "Start"}</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -185,4 +190,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
+  activityButton: {
+    width:'30%',
+    position:'absolute',
+    bottom:20,
+    borderRadius:'20%',
+    padding:15,
+    alignItems:'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    
+  },
+  startButton:{
+    backgroundColor:'#54AC6E'
+  },
+  stopButton:{
+    backgroundColor:'#d64a51'
+  },
+  buttonText:{
+    color:'#ffffff',
+    textAlign:'center',
+    fontSize:20,
+    fontWeight:'bold'
+  }
 });
