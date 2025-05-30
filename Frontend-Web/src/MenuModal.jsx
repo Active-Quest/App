@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./MenuModal.css";
 
 const THEME_OPTIONS = [
@@ -11,7 +11,6 @@ const THEME_OPTIONS = [
 ];
 
 const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
-console.log("Using backend:", API_URL);
 
 const MenuModal = ({ onClose }) => {
     const [theme, setTheme] = useState(localStorage.getItem("theme") || "green");
@@ -23,7 +22,7 @@ const MenuModal = ({ onClose }) => {
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
     const [loading, setLoading] = useState(true);
-
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         THEME_OPTIONS.forEach(t => document.body.classList.remove(`theme-${t.value}`));
@@ -42,8 +41,8 @@ const MenuModal = ({ onClose }) => {
             try {
                 const res = await fetch(`${API_URL}/users/me`, {
                     headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
                 if (res.ok) {
@@ -60,6 +59,37 @@ const MenuModal = ({ onClose }) => {
         checkUser();
     }, []);
 
+    const handleProfileImageClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleImageChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("profileImage", file);
+
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${API_URL}/users/upload-profile`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            if (res.ok) {
+                const updated = await res.json();
+                setUser(prev => ({ ...prev, profileImage: updated.profileImage || null }));
+            } else {
+                alert("Failed to upload image");
+            }
+        } catch (err) {
+            alert("Upload error");
+        }
+    };
 
     const handleLogin = async e => {
         e.preventDefault();
@@ -122,7 +152,24 @@ const MenuModal = ({ onClose }) => {
                 ) : user ? (
                     <div className="auth-form">
                         <h3>Welcome, {user.firstName}!</h3>
-                        <img src={user.profileImage || "/default-avatar.png"} alt="Profile" className="profile-picture" />
+                        <img
+                            src={
+                                user.profileImage
+                                    ? `${API_URL}${user.profileImage}`
+                                    : "/default-avatar.png"
+                            }
+                            alt="Profile"
+                            className="profile-picture"
+                            onClick={handleProfileImageClick}
+                            style={{ cursor: "pointer" }}
+                        />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            style={{ display: "none" }}
+                            onChange={handleImageChange}
+                        />
                         <button onClick={() => {
                             localStorage.removeItem("token");
                             setUser(null);
@@ -158,7 +205,6 @@ const MenuModal = ({ onClose }) => {
                     </form>
                 )}
 
-                {/* Theme picker */}
                 <div className="theme-picker">
                     {THEME_OPTIONS.map(t => (
                         <button
@@ -177,7 +223,6 @@ const MenuModal = ({ onClose }) => {
                     </button>
                 )}
             </div>
-
         </>
     );
 };

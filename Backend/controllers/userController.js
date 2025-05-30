@@ -16,7 +16,7 @@ module.exports = {
     list: async function (req, res) {
 
         try {
-        const users=await UserModel.find();
+            const users = await UserModel.find();
             if (!users) {
                 return res.status(404).json({
                     message: 'No users'
@@ -24,7 +24,7 @@ module.exports = {
             }
 
             return res.json(users);
-        
+
         } catch (err) {
             return res.status(500).json({
                 message: 'Error when getting users.',
@@ -79,17 +79,17 @@ module.exports = {
                 error: err.message || err
             });
         }
-    },   
+    },
 
 
     /**
      * userController.update()
      */
     update: async function (req, res) {
-        try{
+        try {
             var id = req.params.id;
 
-            const user=await UserModel.findOne({_id: id});
+            const user = await UserModel.findOne({ _id: id });
 
             if (!user) {
                 return res.status(404).json({
@@ -101,7 +101,7 @@ module.exports = {
             user.lastName = req.body.lastName ? req.body.lastName : user.lastName;
             user.email = req.body.email ? req.body.email : user.email;
             user.password = req.body.password ? req.body.password : user.password;
-                
+
             try {
                 const savedUser = await user.save();
                 return res.status(201).json(savedUser);
@@ -111,7 +111,7 @@ module.exports = {
                     error: err.message || err
                 });
             }
-        } catch(err) {
+        } catch (err) {
             return res.status(500).json({
                 message: 'Error when getting user',
                 error: err
@@ -123,13 +123,13 @@ module.exports = {
      * userController.remove()
      */
     remove: async function (req, res) {
-        try{
+        try {
             var id = req.params.id;
 
-            const user=await UserModel.findByIdAndRemove(id);
+            const user = await UserModel.findByIdAndRemove(id);
 
             return res.status(204).json();
-        }catch (err){
+        } catch (err) {
             return res.status(500).json({
                 message: 'Error when deleting the user.',
                 error: err
@@ -137,35 +137,35 @@ module.exports = {
         }
     },
 
-    login: async function(req, res, next){
+    login: async function (req, res, next) {
         try {
             const { email, password } = req.body;
-    
+
             const user = await UserModel.findOne({ email });
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
-    
+
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-    
+
             const token = jwt.sign(
                 { id: user._id, email: user.email },
                 JWT_SECRET,
                 { expiresIn: '7d' }
             );
-    
+
             return res.json({ token, user });
-    
+
         } catch (err) {
             return next(err);
         }
     },
-    
-    
-    profile: async function(req, res, next) {
+
+
+    profile: async function (req, res, next) {
         try {
             const user = await UserModel.findById(req.session.userId);
 
@@ -178,86 +178,109 @@ module.exports = {
             return res.json(user);
         } catch (err) {
             return next(err);
-        }  
+        }
     },
 
-        
-    logout: async function(req, res, next){
-        try{
-        if(req.session){
-            req.session.destroy();
 
-            return res.status(201).json({});
-        }
-        }catch(err){
+    logout: async function (req, res, next) {
+        try {
+            if (req.session) {
+                req.session.destroy();
+
+                return res.status(201).json({});
+            }
+        } catch (err) {
             return next(err);
         }
     },
 
-    mobileLogin: async function(req,res,next){
-        try{
-            const { email , password } = req.body;
+    mobileLogin: async function (req, res, next) {
+        try {
+            const { email, password } = req.body;
 
-            if(!email || !password){
+            if (!email || !password) {
                 return res.status(400).json({
-                    message:'Email and password are required!'
+                    message: 'Email and password are required!'
                 });
             }
 
-            const user = await UserModel.findOne({email:email});
+            const user = await UserModel.findOne({ email: email });
 
-            if(!user){
+            if (!user) {
                 return res.status(404).json({
-                    message:'User not found'
+                    message: 'User not found'
                 });
             }
 
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
                 return res.status(401).json({
-                     message: 'Invalid credentials' 
+                    message: 'Invalid credentials'
                 });
             }
 
             const token = jwt.sign(
-                {id: user._id,email:user.email},
+                { id: user._id, email: user.email },
                 JWT_SECRET,
-                {expiresIn : '7d'}
+                { expiresIn: '7d' }
             );
 
-            return res.json({token,user:{id:user._id,email:user.email,firstName:user.firstName,lastName:user.lastName}});
-        }catch(err){
+            return res.json({ token, user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+        } catch (err) {
             return next(err);
         }
     },
-      
-    me: async function(req, res) {
+
+    me: async function (req, res) {
         try {
             const authHeader = req.headers.authorization;
             const token = authHeader && authHeader.split(' ')[1]; // Expecting: "Bearer <token>"
-    
+
             if (!token) {
                 return res.status(401).json({ message: 'Token missing' });
             }
-    
+
             const decoded = jwt.verify(token, JWT_SECRET);
-    
+
             const user = await UserModel.findById(decoded.id);
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
-    
+
             return res.json({
                 id: user._id,
                 email: user.email,
                 firstName: user.firstName,
-                lastName: user.lastName
+                lastName: user.lastName,
+                profileImage: user.profileImage || null 
             });
-    
+
+
+
         } catch (err) {
             return res.status(401).json({ message: 'Invalid token', error: err.message });
         }
     },
-    
-    
+
+    uploadProfile: async (req, res) => {
+        try {
+            const userId = req.userId || req.user?._id;
+            if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+            const imagePath = `/uploads/${req.file.filename}`;
+
+            const updated = await UserModel.findByIdAndUpdate(
+                userId,
+                { profileImage: imagePath },
+                { new: true }
+            );
+
+            res.json(updated);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: "Upload failed" });
+        }
+    },
+
+
 };
