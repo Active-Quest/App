@@ -18,6 +18,9 @@ import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import MapView, { Polyline, Marker } from 'react-native-maps'; /*MAP IMPORT*/
+import * as Location from 'expo-location';
+import { ActivityIndicator, View } from 'react-native';
+
 
 
 export default function App() {
@@ -26,6 +29,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [userDoingActivity, setUserDoingActivity] = useState(false);
   const userDoingActivityRef = useRef(false);
+  const [myLocation, setMyLocation] = useState<null | { latitude: number; longitude: number }>(null);
+
   
   /*FOR MAP*/
   const [path,setPath] = useState<{ latitude:number;longitude:number}[]>([]);
@@ -33,6 +38,21 @@ export default function App() {
 
   useEffect(() => {
     connectMQTT();
+
+    const location = async () =>{
+      const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.warn('Location permission not granted');
+          return;
+        }
+      
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const coords = location.coords;
+
+        setMyLocation(coords);
+    }
+
+    location();
   }, []);
 
   
@@ -70,14 +90,23 @@ export default function App() {
     return activityId;
   };
 
+  if (loading || !myLocation) { //Wait for the initial location!
   return (
     <SafeAreaView style={styles.container}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    </SafeAreaView>
+  );
+}
 
+  return (
+    <SafeAreaView style={styles.container}>
       <MapView
       style={{flex:1}}
       initialRegion={{
-        latitude: path[0]?.latitude || 46.3127862,
-        longitude: path[0]?.longitude || 13.992352,
+        latitude: myLocation?.latitude || 46.3127862,
+        longitude: myLocation?.longitude || 13.992352,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       }}
@@ -89,13 +118,15 @@ export default function App() {
         }
         :undefined
       }
+      showsUserLocation
       >
         {path.length > 0 &&(
           <>
+            {/*<Marker coordinate={path[path.length -1]}/>*/}
+            
             <Polyline coordinates={path} strokeColor='blue' strokeWidth={4}/>
-            <Marker coordinate={path[path.length -1]}/>
           </>
-        )}
+        )} 
       </MapView>
 
       <Button
