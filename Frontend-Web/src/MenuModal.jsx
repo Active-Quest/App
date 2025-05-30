@@ -10,6 +10,9 @@ const THEME_OPTIONS = [
     { value: "green", label: "Green", color: "#3E8914" },
 ];
 
+const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
+console.log("Using backend:", API_URL);
+
 const MenuModal = ({ onClose }) => {
     const [theme, setTheme] = useState(localStorage.getItem("theme") || "green");
     const [view, setView] = useState("login");
@@ -19,6 +22,8 @@ const MenuModal = ({ onClose }) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
+    const [loading, setLoading] = useState(true);
+
 
     useEffect(() => {
         THEME_OPTIONS.forEach(t => document.body.classList.remove(`theme-${t.value}`));
@@ -28,34 +33,50 @@ const MenuModal = ({ onClose }) => {
 
     useEffect(() => {
         const checkUser = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
             try {
-                const res = await fetch("http://activequest.ddns.net:3002/users/me", {
-                    credentials: "include"
+                const res = await fetch(`${API_URL}/users/me`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 });
+
                 if (res.ok) {
                     const data = await res.json();
-                    setUser(data.data);
+                    setUser(data);
+                } else {
+                    localStorage.removeItem("token");
                 }
             } catch {
-                console.warn("Failed to fetch user session.");
+                console.warn("Failed to fetch user profile.");
             }
+            setLoading(false);
         };
         checkUser();
     }, []);
 
+
     const handleLogin = async e => {
         e.preventDefault();
         if (!email || !password) return;
+
         try {
-            const res = await fetch("http://activequest.ddns.net:3002/users/login", {
+            const res = await fetch(`${API_URL}/users/login`, {
                 method: "POST",
-                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
             });
+
             const data = await res.json();
-            if (res.ok) {
-                setUser(data.data);
+
+            if (res.ok && data.token && data.user) {
+                localStorage.setItem("token", data.token);
+                setUser(data.user);
             } else {
                 alert(data.message || "Login failed");
             }
@@ -64,7 +85,6 @@ const MenuModal = ({ onClose }) => {
         }
     };
 
-
     const handleRegister = async e => {
         e.preventDefault();
         if (!firstName || !lastName || !email || !password) return;
@@ -72,13 +92,14 @@ const MenuModal = ({ onClose }) => {
             alert("Passwords must match");
             return;
         }
+
         try {
-            const res = await fetch("http://activequest.ddns.net:3002/users/register", {
+            const res = await fetch(`${API_URL}/users/register`, {
                 method: "POST",
-                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ firstName, lastName, email, password }),
             });
+
             const data = await res.json();
             if (res.ok) {
                 alert("Registration successful! Please log in.");
@@ -94,21 +115,18 @@ const MenuModal = ({ onClose }) => {
 
     return (
         <>
-            {/* Login/Register/Me */}
             <div className="overlay" onClick={onClose} />
             <div className="modal">
-                {user ? (
+                {loading ? (
+                    <div className="auth-form">Loading...</div>
+                ) : user ? (
                     <div className="auth-form">
                         <h3>Welcome, {user.firstName}!</h3>
                         <img src={user.profileImage || "/default-avatar.png"} alt="Profile" className="profile-picture" />
                         <button onClick={() => {
-                            fetch("http://activequest.ddns.net:3002/users/logout", {
-                                method: "GET",
-                                credentials: "include"
-                            }).then(() => {
-                                setUser(null);
-                                setView("login");
-                            });
+                            localStorage.removeItem("token");
+                            setUser(null);
+                            setView("login");
                         }}>
                             Logout
                         </button>
@@ -121,9 +139,7 @@ const MenuModal = ({ onClose }) => {
                         <button type="submit">Login</button>
                         <p>
                             Don’t have an account?{" "}
-                            <span className="switch-view" onClick={() => setView("register")}>
-                                Register
-                            </span>
+                            <span className="switch-view" onClick={() => setView("register")}>Register</span>
                         </p>
                     </form>
                 ) : (
@@ -137,9 +153,7 @@ const MenuModal = ({ onClose }) => {
                         <button type="submit">Register</button>
                         <p>
                             Already have an account?{" "}
-                            <span className="switch-view" onClick={() => setView("login")}>
-                                Login
-                            </span>
+                            <span className="switch-view" onClick={() => setView("login")}>Login</span>
                         </p>
                     </form>
                 )}
@@ -157,12 +171,13 @@ const MenuModal = ({ onClose }) => {
                     ))}
                 </div>
 
-                {!user && (
+                {!user && !loading && (
                     <button className="close-btn" onClick={onClose}>
                         Close
                     </button>
                 )}
             </div>
+
         </>
     );
 };

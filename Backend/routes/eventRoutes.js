@@ -1,15 +1,15 @@
 var express = require('express');
 var router = express.Router();
-var userController = require('../controllers/eventController.js');
+var eventController = require('../controllers/eventController.js');
 
-router.get('/', userController.list);
+router.get('/', eventController.list);
 
-router.get('/:id', userController.show);
+router.get('/:id', eventController.show);
 
-router.post('/', userController.create);
+router.post('/', eventController.create);
 
-router.put('/:id', userController.update);
+router.put('/:id', eventController.update);
 
-router.delete('/:id', userController.remove);
+router.delete('/:id', eventController.remove);
 
 module.exports = router;
