@@ -17,20 +17,6 @@
     transition: all 0.3s ease;
   }
   
-  .map-placeholder {
-    background-color: var(--color-acent);
-    border-radius: 6px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-  }
-  
-  .waypoint-list {
-    list-style: none;
-    padding-left: 0;
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-  }
-  
   .activity-data p,
   .expanded-section p {
     margin: 0.3rem 0;
