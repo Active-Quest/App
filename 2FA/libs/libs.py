@@ -23,4 +23,14 @@ def flip(slika , direction = "h"):
         cv.flip(slika , -1) # obrne sliko horiziotalno in vertikalno
     return slika
 
+def brightenImage(image, brightnessIncrease=30):
+    hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+    h, s, v = cv.split(hsv)
+
+    v = v.astype(np.int32) + brightnessIncrease # spremeni v int32(v uint8 bi svetle točke postale črne) in doda podano vrednost ki osvetli sliko
+    v = np.clip(v, 0, 255).astype(np.uint8) # spremeni nazaj v uint8 in odreže vrednosti večje od 255 in manjše od 0
+
+    hsv_bright = cv.merge([h, s, v])
+    brightened = cv.cvtColor(hsv_bright, cv.COLOR_HSV2BGR)
+    return brightened
 
