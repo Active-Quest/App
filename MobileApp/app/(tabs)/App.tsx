@@ -30,7 +30,7 @@ export default function App() {
   const [userDoingActivity, setUserDoingActivity] = useState(false);
   const userDoingActivityRef = useRef(false);
   const [myLocation, setMyLocation] = useState<null | { latitude: number; longitude: number }>(null);
-
+  const [distance, setDistance] = useState(0.00);
   
   /*FOR MAP*/
   const [path,setPath] = useState<{ latitude:number;longitude:number}[]>([]);
@@ -131,6 +131,9 @@ export default function App() {
       </MapView>
       
       <View style={{ alignItems: 'center'}}>
+        <View style={styles.distanceContainer}>
+          <Text>Distance: {distance.toFixed(2)} m</Text>
+        </View>
         <TouchableOpacity
           style={[styles.activityButton, userDoingActivityRef.current ? styles.stopButton : styles.startButton]}
           disabled={loading || !user}
@@ -161,15 +164,27 @@ export default function App() {
                   setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
                   setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
                 }
+
+                if (location?.distance != null && !isNaN(location.distance)) {
+                  setDistance(prev => {
+                    const updated = prev + location.distance;
+                    console.log("Added:", location.distance, "| Total:", updated);
+                    return updated;
+                  });
+                } else {
+                  console.warn("Invalid distance received:", location?.distance);
+                }
                 
                 
-                //DEBUG IF NEEDED
+                
+                //DEBUG
                 /*console.log(`User:  ${user?.id}`);
                 console.log(`Activity:  ${idToUse}`);*/
                 
 
                 if (!userDoingActivityRef.current) {
                   clearInterval(interval);
+                  AsyncStorage.removeItem('prevCoord');
                 }
               }, 10000);
             };
@@ -215,5 +230,11 @@ const styles = StyleSheet.create({
     textAlign:'center',
     fontSize:20,
     fontWeight:'bold'
+  },
+  distanceContainer:{
+    backgroundColor:'#ffffff',
+    width:'50%',
+    position:'absolute',
+    top:20
   }
 });
