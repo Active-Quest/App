@@ -22,7 +22,7 @@ if __name__ == '__main__':
     if not kamera.isOpened():
         print('Kamera ni bila odprta.')
     else:
-        save_dir = 'images'
+        save_dir = '2FA/images'
         os.makedirs(save_dir, exist_ok=True)
         next_number = get_next_filename(save_dir, start=1000)
         while True:
@@ -34,9 +34,10 @@ if __name__ == '__main__':
 
             cv.flip(slika,1)
             image_path=os.path.join(save_dir, f"{next_number}.jpg")
+
             next_number+= 1
             cv.imwrite(image_path, slika)
-
+            
             time.sleep(5)
 
             if key == ord('q'):
