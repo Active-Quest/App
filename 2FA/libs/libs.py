@@ -39,3 +39,21 @@ def brightenImage(slika, brightnessIncrease=30):
     brightened = cv.cvtColor(hsv_bright, cv.COLOR_HSV2BGR)
     return brightened
 
+def konvolucija(slika):
+    jedro = np.full((5, 5), 1, dtype=np.float32) / (5 * 5)
+    visina, sirina, kanali = slika.shape
+    k_visina, k_sirina = jedro.shape
+    
+    pad_v = k_visina // 2
+    pad_h = k_sirina // 2
+    
+    slika_padded = np.pad(slika, ((pad_v, pad_v), (pad_h, pad_h), (0, 0)), mode='constant', constant_values=0)
+    izhodna_slika = np.zeros_like(slika, dtype=np.float32)
+    
+    for i in range(visina):
+        for j in range(sirina):
+            for c in range(kanali):
+                region = slika_padded[i:i+k_visina, j:j+k_sirina, c]
+                izhodna_slika[i, j, c] = np.sum(region * jedro)
+
+    return np.clip(izhodna_slika, 0, 255).astype(np.uint8)

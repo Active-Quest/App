@@ -38,7 +38,7 @@ if __name__ == '__main__':
             
             cv.imwrite(image_path, slika)
 
-            slikab=libs.brightenImage(slika)
+            slikab=libs.konvolucija(slika)
             image_path=os.path.join(save_dir, f"{next_number}.jpg")
             next_number+= 1
             
