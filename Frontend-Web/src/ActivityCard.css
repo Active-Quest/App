@@ -13,7 +13,6 @@
     margin: 1rem;
     background: var(--color-surface);
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    cursor: pointer;
     transition: all 0.3s ease;
   }
   
@@ -26,5 +25,9 @@
     padding-top: 1rem;
     border-top: 1px dashed var(--color-muted);
     margin-top: 1rem;
+  }
+
+  .map-icon{
+    cursor: pointer;
   }
   
