@@ -22,10 +22,10 @@ const Events = () => {
     });
 
     // Dev
-    const BASE_URL = 'http://localhost:3001';
+    //const BASE_URL = 'http://localhost:3001';
 
     // Relese
-    // const BASE_URL = 'http://activequest.ddns.net:3002';
+    const BASE_URL = 'http://activequest.ddns.net:3002';
 
     useEffect(() => {
         axios.get(`${BASE_URL}/events`)
