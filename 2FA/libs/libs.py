@@ -4,7 +4,10 @@ import random as rng
 import math
 
 def rotate(slika,angle=30):
-    angle += np.random.randint(5, 10)
+    if angle > 360 or angle < 0:
+        return slika
+    if angle <= 350:
+        angle += np.random.randint(5, 10)
     h, w = slika.shape[:2]
     center = (w // 2, h // 2)
 
@@ -23,8 +26,10 @@ def flip(slika , direction = "h"):
         cv.flip(slika , -1) # obrne sliko horiziotalno in vertikalno
     return slika
 
-def brightenImage(image, brightnessIncrease=30):
-    hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+def brightenImage(slika, brightnessIncrease=30):
+    if brightnessIncrease < 1:
+        return slika
+    hsv = cv.cvtColor(slika, cv.COLOR_BGR2HSV)
     h, s, v = cv.split(hsv)
 
     v = v.astype(np.int32) + brightnessIncrease # spremeni v int32(v uint8 bi svetle točke postale črne) in doda podano vrednost ki osvetli sliko
