@@ -11,10 +11,10 @@ const THEME_OPTIONS = [
 ];
 
 
-
 //const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
 const API_URL = "http://activequest.ddns.net:3002";
 //const API_URL = 'http://localhost:3001';
+
 console.log("Using backend:", API_URL);
 
 const MenuModal = ({ onClose }) => {
