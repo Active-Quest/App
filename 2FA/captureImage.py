@@ -33,12 +33,25 @@ if __name__ == '__main__':
             key=cv.waitKey(1) & 0xFF
 
             cv.flip(slika,1)
-            image_path=os.path.join(save_dir, f"{next_number}.jpg")
 
+            image_path=os.path.join(save_dir, f"{next_number}.jpg")
             next_number+= 1
-            cv.imwrite(image_path, slika)
             
-            time.sleep(5)
+            cv.imwrite(image_path, slika)
+
+            slikaro1=libs.rotate(slika,30)
+            image_path=os.path.join(save_dir, f"{next_number}.jpg")
+            next_number+= 1
+            
+            cv.imwrite(image_path, slikaro1)
+
+            slikaro2=libs.rotate(slika,320)
+            image_path=os.path.join(save_dir, f"{next_number}.jpg")
+            next_number+= 1
+            
+            cv.imwrite(image_path, slikaro2)
+            
+            
 
             if key == ord('q'):
                 break
