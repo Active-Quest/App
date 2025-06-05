@@ -20,7 +20,7 @@ var activitySchema = new Schema({
 		default: Date.now
 	},
 	'duration' : String,
-	'distance' : String,
+	'distance' : Number,
 	'waypoints' : [{
 		lat : String,
 		lon : String,
