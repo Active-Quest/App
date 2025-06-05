@@ -62,7 +62,10 @@ mqttClient.on('message', async (topic, message) => {
   
       if (existing) {
         existing.waypoints.push(waypoint);
-        await existing.save();
+        await existing.updateOne({
+          $push: { waypoints: waypoint },
+          $inc: { distance: newDistance } 
+        });
         console.log(`Updated existing activity: ${activityId}`);
         return
       } else {
