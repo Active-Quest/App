@@ -64,7 +64,8 @@ mqttClient.on('message', async (topic, message) => {
         existing.waypoints.push(waypoint);
         await existing.updateOne({
           $push: { waypoints: waypoint },
-          $inc: { distance: data.distance } //increment the new distance to the total
+          $inc: { distance: data.distance }, //increment the new distance to the total
+          duration: data.duration
         });
         console.log(`Updated existing activity: ${activityId}`);
         return
