@@ -3,6 +3,8 @@ import ActivityCard from './ActivityCard';
 
 function Activities() {
   const [activities, setActivities] = useState([]);
+
+  //const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
   const API_URL = 'http://activequest.ddns.net:3002';
 
   useEffect(() => {

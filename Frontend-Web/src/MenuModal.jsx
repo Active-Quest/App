@@ -10,7 +10,11 @@ const THEME_OPTIONS = [
     { value: "green", label: "Green", color: "#3E8914" },
 ];
 
-const API_URL ="http://activequest.ddns.net:3002";
+
+//const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
+const API_URL = "http://activequest.ddns.net:3002";
+//const API_URL = 'http://localhost:3001';
+
 console.log("Using backend:", API_URL);
 
 const MenuModal = ({ onClose }) => {
@@ -77,6 +81,7 @@ const MenuModal = ({ onClose }) => {
             if (res.ok && data.token && data.user) {
                 localStorage.setItem("token", data.token);
                 setUser(data.user);
+                localStorage.setItem("user", JSON.stringify(data.user));
             } else {
                 alert(data.message || "Login failed");
             }
