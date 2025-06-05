@@ -69,7 +69,7 @@ const ActivityCard: React.FC<Props> = ({ activity }) => {
             <View style={styles.dataSection}>
                 <Text><Text style={styles.bold}>{user?.firstName} {user?.lastName}</Text></Text>
                 <Text><Text style={styles.bold}>Duration:</Text> {activity.duration}</Text>
-                <Text><Text style={styles.bold}>Distance:</Text> {activity.distance} km</Text>
+                <Text><Text style={styles.bold}>Distance:</Text> {(activity.distance / 1000).toFixed(3)} km</Text>
             </View>
             <View>
                 <TouchableOpacity onPress={() => setExpanded(!expanded)}>
@@ -93,7 +93,7 @@ const ActivityCard: React.FC<Props> = ({ activity }) => {
             </MapView>
             <Text><Text style={styles.bold}>Start Time:</Text> {new Date(activity.startTime).toLocaleString()}</Text>
             <Text><Text style={styles.bold}>Avg Speed:</Text> {activity.avgSpeed ?? 'N/A'} km/h</Text>
-            <Text><Text style={styles.bold}>Event ID:</Text> {activity.eventId}</Text>
+            {/*<Text><Text style={styles.bold}>Event ID:</Text> {activity.eventId}</Text>*/}
           </View>
         )}
       </View>

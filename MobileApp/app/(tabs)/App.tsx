@@ -2,6 +2,8 @@ import { Buffer } from 'buffer';
 import process from 'process';
 import 'react-native-url-polyfill/auto';
 import * as Crypto from 'expo-crypto';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
 }
@@ -10,8 +12,8 @@ if (typeof globalThis.process === 'undefined') {
   globalThis.process = process;
 }
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { SafeAreaView, Button, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { use, useCallback, useEffect, useRef, useState } from 'react';
+import { SafeAreaView, Button, StyleSheet, TouchableOpacity, Text, Platform, StatusBar } from 'react-native';
 import { connectMQTT } from '../../src/mqttClient';
 import { sendLocation } from '../../src/sendLocation';
 import React from 'react';
@@ -20,6 +22,7 @@ import { useFocusEffect } from 'expo-router';
 import MapView, { Polyline, Marker } from 'react-native-maps'; /*MAP IMPORT*/
 import * as Location from 'expo-location';
 import { ActivityIndicator, View } from 'react-native';
+import { format } from 'path';
 
 
 
@@ -31,7 +34,11 @@ export default function App() {
   const userDoingActivityRef = useRef(false);
   const [myLocation, setMyLocation] = useState<null | { latitude: number; longitude: number }>(null);
   const [distance, setDistance] = useState(0.00);
-  
+  const [duration,setDuration] = useState(0.00)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+  const durationRef = useRef(0);//For sending the duration to backend
+
   /*FOR MAP*/
   const [path,setPath] = useState<{ latitude:number;longitude:number}[]>([]);
   const [currentLocation,setCurrentLocation] = useState(null);
@@ -90,6 +97,30 @@ export default function App() {
     return activityId;
   };
 
+  const startStopwatch = () =>{
+    startTimeRef.current = Date.now();
+    intervalRef.current = setInterval(()=>{
+      if(startTimeRef.current !== null){
+        const delta = Math.floor((Date.now() - startTimeRef.current)/1000);
+        setDuration(delta);
+        durationRef.current = delta;
+      }
+    },1000);
+  }
+
+  const stopStopwatch = () =>{
+    if(intervalRef.current){
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }
+
+  const formatTime = (seconds:number) =>{
+    const mins = Math.floor(seconds/60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2,'0')}`;
+  }
+
   if (loading || !myLocation) { //Wait for the initial location!
   return (
     <SafeAreaView style={styles.container}>
@@ -130,9 +161,10 @@ export default function App() {
         )} 
       </MapView>
       
-      <View style={{ alignItems: 'center'}}>
+      {/*<View style={{ alignItems: 'center'}}>*/}
         <View style={styles.distanceContainer}>
-          <Text>Distance: {distance.toFixed(2)} m</Text>
+          <Text style={styles.distanceText}><FontAwesome5 name="ruler" size={14} color="black" /> {distance.toFixed(3)}m</Text>
+          <Text style={styles.distanceText}>{formatTime(duration)} <FontAwesome5 name="hourglass-half" size={14} color="black" /></Text>
         </View>
         <TouchableOpacity
           style={[styles.activityButton, userDoingActivityRef.current ? styles.stopButton : styles.startButton]}
@@ -155,11 +187,16 @@ export default function App() {
               setUserDoingActivity(newState);
               userDoingActivityRef.current = newState;
 
-              if(!newState) return; //If we just stopped dont start the interval
+              if(!newState){
+                stopStopwatch();
+                return; //If we just stopped dont start the interval
+              } 
               
+              startStopwatch();
 
               const interval = setInterval(async() => {
-                let location = await sendLocation(user?.id, idToUse);//Wait for data from function
+                console.log('SENT TIME: ', formatTime(durationRef.current));
+                let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current));//Wait for data from function
                 if(location?.latitude && location?.longitude){
                   setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
                   setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
@@ -168,7 +205,7 @@ export default function App() {
                 if (location?.distance != null && !isNaN(location.distance)) {
                   setDistance(prev => {
                     const updated = prev + location.distance;
-                    console.log("Added:", location.distance, "| Total:", updated);
+                    //console.log("Added:", location.distance, "| Total:", updated);
                     return updated;
                   });
                 } else {
@@ -194,7 +231,7 @@ export default function App() {
         >
             <Text style={styles.buttonText}>{userDoingActivity ? "Stop" : "Start"}</Text>
         </TouchableOpacity>
-      </View>
+      {/*</View>*/}
     </SafeAreaView>
   );
 }
@@ -204,6 +241,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
+    position:'relative'
   },
   activityButton: {
     width:'30%',
@@ -217,6 +255,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
+    alignSelf:'center'
     
   },
   startButton:{
@@ -232,9 +271,25 @@ const styles = StyleSheet.create({
     fontWeight:'bold'
   },
   distanceContainer:{
-    backgroundColor:'#ffffff',
-    width:'50%',
     position:'absolute',
-    top:20
+    top: 20,
+    borderRadius:'10%',
+    padding:20,
+    alignItems:'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    backgroundColor:'white',
+    alignSelf:'center',
+    display:'flex',
+    flexDirection:'row',
+    justifyContent:'space-between',
+    minWidth:200
+    
+  },
+  distanceText:{
+    textAlign:'center'
   }
 });
