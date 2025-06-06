@@ -25,40 +25,42 @@ if __name__ == '__main__':
         save_dir = '2FA/images'
         os.makedirs(save_dir, exist_ok=True)
         next_number = get_next_filename(save_dir, start=1000)
-        while True:
-            time.sleep(1)
-            ret, slika = kamera.read()
-            slika=cv.resize(slika, (128, 128))
-            cv.imshow('Kamera', cv.flip(slika,1))
-            key=cv.waitKey(1) & 0xFF
 
-            cv.flip(slika,1)
-            image_path=os.path.join(save_dir, f"{next_number}.jpg")
-            next_number+= 1
-            
-            cv.imwrite(image_path, slika)
+        time.sleep(1)
+        ret, slika = kamera.read()
+        slika=cv.resize(slika, (128, 128))
+        cv.imshow('Kamera', cv.flip(slika,1))
+        key=cv.waitKey(1) & 0xFF
 
-            slikab=libs.rotate(slika)
-            image_path=os.path.join(save_dir, f"{next_number}.jpg")
-            next_number+= 1
-            
-            cv.imwrite(image_path, slikab)
-            '''
-            slikaro1=libs.rotate(slika,30)
-            image_path=os.path.join(save_dir, f"{next_number}.jpg")
-            next_number+= 1
-            
-            cv.imwrite(image_path, slikaro1)
+        cv.flip(slika,1)
+        image_path=os.path.join(save_dir, f"{next_number}.jpg")
+        next_number+= 1
+        
+        cv.imwrite(image_path, slika)
 
-            slikaro2=libs.rotate(slika,320)
-            image_path=os.path.join(save_dir, f"{next_number}.jpg")
-            next_number+= 1
-            
-            cv.imwrite(image_path, slikaro2)
-            '''
+        imageAugmented=libs.rotate(slika)
+        image_path=os.path.join(save_dir, f"{next_number}.jpg")
+        next_number+= 1
+        
+        cv.imwrite(image_path, imageAugmented)
+       
+        imageAugmented=libs.rotate(slika,330)
+        image_path=os.path.join(save_dir, f"{next_number}.jpg")
+        next_number+= 1
+        
+        cv.imwrite(image_path, imageAugmented)
 
-            if key == ord('q'):
-                break
+        imageAugmented=libs.konvolucija(slika)
+        image_path=os.path.join(save_dir, f"{next_number}.jpg")
+        next_number+= 1
+        
+        cv.imwrite(image_path, imageAugmented)
+
+        imageAugmented=libs.brightenImage(slika)
+        image_path=os.path.join(save_dir, f"{next_number}.jpg")
+        next_number+= 1
+        
+        cv.imwrite(image_path, imageAugmented)
 
         kamera.release()
         cv.destroyAllWindows()

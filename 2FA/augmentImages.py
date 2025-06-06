@@ -4,11 +4,11 @@ import os
 import re
 from libs import libs
 
-def get_next_filename(folder, prefix, start=1):
+def getNextFilename(folder, prefix, start=1):
     files = os.listdir(folder)
     numbers = []
 
-    # Regex to match files like Alain_Cervantes_0001.jpg
+    # pridobi največjo št v datoteki brez imena
     pattern = re.compile(re.escape(prefix) + r'_(\d+)\.jpg')
 
     for file in files:
@@ -16,12 +16,12 @@ def get_next_filename(folder, prefix, start=1):
         if match:
             numbers.append(int(match.group(1)))
 
-    next_number = max(numbers) + 1 if numbers else start
-    return next_number
+    nextNumber = max(numbers) + 1 if numbers else start
+    return nextNumber
 
-def augment_images_in_folder(folder, prefix):
-    next_number = get_next_filename(folder, prefix, start=1)
-
+def augmentImagesInFolder(folder, prefix):
+    nextNumber = getNextFilename(folder, prefix, start=1)
+    # gre skozi vse slike v mapi
     for filename in os.listdir(folder):
         if filename.lower().endswith('.jpg'):
             img_path = os.path.join(folder, filename)
@@ -32,39 +32,44 @@ def augment_images_in_folder(folder, prefix):
 
             image = cv.resize(image, (128, 128))
 
-            save_path = os.path.join(folder, f"{prefix}_{next_number:04d}.jpg")
+            save_path = os.path.join(folder, f"{prefix}_{nextNumber:04d}.jpg")
             cv.imwrite(save_path, image)
-            next_number += 1
+            nextNumber += 1
 
-            conv_image = libs.konvolucija(image)
-            save_path = os.path.join(folder, f"{prefix}_{next_number:04d}.jpg")
-            cv.imwrite(save_path, conv_image)
-            next_number += 1
+            augmentedImage = libs.konvolucija(image)
+            save_path = os.path.join(folder, f"{prefix}_{nextNumber:04d}.jpg")
+            cv.imwrite(save_path, augmentedImage)
+            nextNumber += 1
 
-            conv_image = libs.brightenImage(image)
-            save_path = os.path.join(folder, f"{prefix}_{next_number:04d}.jpg")
-            cv.imwrite(save_path, conv_image)
-            next_number += 1
+            augmentedImage = libs.brightenImage(image)
+            save_path = os.path.join(folder, f"{prefix}_{nextNumber:04d}.jpg")
+            cv.imwrite(save_path, augmentedImage)
+            nextNumber += 1
 
-            conv_image = libs.rotate(image)
-            save_path = os.path.join(folder, f"{prefix}_{next_number:04d}.jpg")
-            cv.imwrite(save_path, conv_image)
-            next_number += 1
+            augmentedImage = libs.rotate(image)
+            save_path = os.path.join(folder, f"{prefix}_{nextNumber:04d}.jpg")
+            cv.imwrite(save_path, augmentedImage)
+            nextNumber += 1
 
-            conv_image = libs.rotate(image,270)
-            save_path = os.path.join(folder, f"{prefix}_{next_number:04d}.jpg")
-            cv.imwrite(save_path, conv_image)
-            next_number += 1
+            augmentedImage = libs.rotate(image,330)
+            save_path = os.path.join(folder, f"{prefix}_{nextNumber:04d}.jpg")
+            cv.imwrite(save_path, augmentedImage)
+            nextNumber += 1
+
+            try:
+                os.remove(img_path) # odstrani orginalno sliko
+            except Exception as e:
+                print(f"Failed to delete {img_path}: {e}")
 
 
 
-def process_all_images(root_dir):
-    for dirpath, dirnames, filenames in os.walk(root_dir):
-        prefix = os.path.basename(dirpath)
+def processAllImages(root_dir):
+    for dirpath, dirnames, filenames in os.walk(root_dir): 
+        prefix = os.path.basename(dirpath) # pridobi ime datoteke
         print(f"Processing folder: {dirpath} with prefix: {prefix}")
-        augment_images_in_folder(dirpath, prefix)
+        augmentImagesInFolder(dirpath, prefix)
 
 
 if __name__ == '__main__':
     root_directory = '2FA/images/lfw-deepfunneled'
-    process_all_images(root_directory)
+    processAllImages(root_directory)

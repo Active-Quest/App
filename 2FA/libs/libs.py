@@ -40,7 +40,7 @@ def brightenImage(slika, brightnessIncrease=30):
     return brightened
 
 def konvolucija(slika):
-    jedro = np.full((5, 5), 1, dtype=np.float32) / (5 * 5)
+    jedro = np.full((3, 3), 1, dtype=np.float32) / (3 * 3)
     visina, sirina, kanali = slika.shape
     k_visina, k_sirina = jedro.shape
     
