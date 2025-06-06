@@ -22,10 +22,7 @@ import { useFocusEffect } from 'expo-router';
 import MapView, { Polyline, Marker } from 'react-native-maps'; /*MAP IMPORT*/
 import * as Location from 'expo-location';
 import { ActivityIndicator, View } from 'react-native';
-import { format } from 'path';
-
-
-
+import Dropdown from '../../src/dropdown';
 export default function App() {
   const [user, setUser] = useState(null);
   const [activityId, setActivityId] = useState('');
@@ -38,6 +35,10 @@ export default function App() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const durationRef = useRef(0);//For sending the duration to backend
+  const [events,setEvents] = useState([]);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [selectedDropdownValue,setSelectedDropdownValue] = useState<string | null>(null);
+
 
   /*FOR MAP*/
   const [path,setPath] = useState<{ latitude:number;longitude:number}[]>([]);
@@ -78,6 +79,18 @@ export default function App() {
     fetchData();
     },[])
   );
+
+  useEffect(()=>{
+    fetch('http://activequest.ddns.net:3002/events')
+    .then(res => res.json())
+    .then(data => {
+      const dropdownItems = data.map(event => ({
+        label: event.title,
+        value:event._id
+      }));
+      setEvents(dropdownItems);
+    });
+  });
 
   const makeActivityId = async () => {
     if (!user) {
@@ -121,6 +134,7 @@ export default function App() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2,'0')}`;
   }
 
+  
   if (loading || !myLocation) { //Wait for the initial location!
   return (
     <SafeAreaView style={styles.container}>
@@ -132,107 +146,132 @@ export default function App() {
 }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <MapView
-      style={{flex:1}}
-      initialRegion={{
-        latitude: myLocation?.latitude || 46.3127862,
-        longitude: myLocation?.longitude || 13.992352,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      }}
-      region = {
-        currentLocation ? {
-          ...currentLocation,
+    <>
+    {eventId ?(
+      <SafeAreaView style={styles.container}>
+        <MapView
+        style={{flex:1}}
+        initialRegion={{
+          latitude: myLocation?.latitude || 46.3127862,
+          longitude: myLocation?.longitude || 13.992352,
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
+        }}
+        region = {
+          currentLocation ? {
+            ...currentLocation,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }
+          :undefined
         }
-        :undefined
-      }
-      showsUserLocation
-      showsMyLocationButton
-      >
-        {path.length > 0 &&(
-          <>
-            {/*<Marker coordinate={path[path.length -1]}/>*/}
-            
-            <Polyline coordinates={path} strokeColor='blue' strokeWidth={4}/>
-          </>
-        )} 
-      </MapView>
-      
-      {/*<View style={{ alignItems: 'center'}}>*/}
-        <View style={styles.distanceContainer}>
-          <Text style={styles.distanceText}><FontAwesome5 name="ruler" size={14} color="black" /> {distance.toFixed(3)}m</Text>
-          <Text style={styles.distanceText}>{formatTime(duration)} <FontAwesome5 name="hourglass-half" size={14} color="black" /></Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.activityButton, userDoingActivityRef.current ? styles.stopButton : styles.startButton]}
-          disabled={loading || !user}
-          onPress={() => {
-            //console.log(userDoingActivity);
-            const doingActivity = async () => {
-              if (!user) {
-                console.warn("User is not available.");
-                return;
-              }
-              let idToUse: string | undefined = activityId;
-
-              if (!idToUse) {
-                idToUse = await makeActivityId();
-                if(!idToUse) return;
-              }
-
-              const newState = !userDoingActivity;
-              setUserDoingActivity(newState);
-              userDoingActivityRef.current = newState;
-
-              if(!newState){
-                stopStopwatch();
-                return; //If we just stopped dont start the interval
-              } 
-              
-              startStopwatch();
-
-              const interval = setInterval(async() => {
-                console.log('SENT TIME: ', formatTime(durationRef.current));
-                let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current));//Wait for data from function
-                if(location?.latitude && location?.longitude){
-                  setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
-                  setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
-                }
-
-                if (location?.distance != null && !isNaN(location.distance)) {
-                  setDistance(prev => {
-                    const updated = prev + location.distance;
-                    //console.log("Added:", location.distance, "| Total:", updated);
-                    return updated;
-                  });
-                } else {
-                  console.warn("Invalid distance received:", location?.distance);
-                }
-                
-                
-                
-                //DEBUG
-                /*console.log(`User:  ${user?.id}`);
-                console.log(`Activity:  ${idToUse}`);*/
-                
-
-                if (!userDoingActivityRef.current) {
-                  clearInterval(interval);
-                  AsyncStorage.removeItem('prevCoord');
-                }
-              }, 10000);
-            };
-            
-            doingActivity();
-          }}
+        showsUserLocation
+        showsMyLocationButton
         >
-            <Text style={styles.buttonText}>{userDoingActivity ? "Stop" : "Start"}</Text>
-        </TouchableOpacity>
-      {/*</View>*/}
-    </SafeAreaView>
+          {path.length > 0 &&(
+            <>
+              {/*<Marker coordinate={path[path.length -1]}/>*/}
+              
+              <Polyline coordinates={path} strokeColor='blue' strokeWidth={4}/>
+            </>
+          )} 
+        </MapView>
+        
+        {/*<View style={{ alignItems: 'center'}}>*/}
+          <View style={styles.distanceContainer}>
+            <Text style={styles.distanceText}><FontAwesome5 name="ruler" size={14} color="black" /> {distance.toFixed(3)}m</Text>
+            <Text style={styles.distanceText}>{formatTime(duration)} <FontAwesome5 name="hourglass-half" size={14} color="black" /></Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.activityButton, userDoingActivityRef.current ? styles.stopButton : styles.startButton]}
+            disabled={loading || !user}
+            onPress={() => {
+              //console.log(userDoingActivity);
+              const doingActivity = async () => {
+                if (!user) {
+                  console.warn("User is not available.");
+                  return;
+                }
+                let idToUse: string | undefined = activityId;
+
+                if (!idToUse) {
+                  idToUse = await makeActivityId();
+                  if(!idToUse) return;
+                }
+
+                const newState = !userDoingActivity;
+                setUserDoingActivity(newState);
+                userDoingActivityRef.current = newState;
+
+                if(!newState){
+                  stopStopwatch();
+                  return; //If we just stopped dont start the interval
+                } 
+                
+                startStopwatch();
+
+                const interval = setInterval(async() => {
+                  console.log('SENT TIME: ', formatTime(durationRef.current));
+                  let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current));//Wait for data from function
+                  if(location?.latitude && location?.longitude){
+                    setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
+                    setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
+                  }
+
+                  if (location?.distance != null && !isNaN(location.distance)) {
+                    setDistance(prev => {
+                      const updated = prev + location.distance;
+                      //console.log("Added:", location.distance, "| Total:", updated);
+                      return updated;
+                    });
+                  } else {
+                    console.warn("Invalid distance received:", location?.distance);
+                  }
+                  
+                  
+                  
+                  //DEBUG
+                  /*console.log(`User:  ${user?.id}`);
+                  console.log(`Activity:  ${idToUse}`);*/
+                  
+
+                  if (!userDoingActivityRef.current) {
+                    clearInterval(interval);
+                    AsyncStorage.removeItem('prevCoord');
+                  }
+                }, 10000);
+              };
+              
+              doingActivity();
+            }}
+          >
+              <Text style={styles.buttonText}>{userDoingActivity ? "Stop" : "Start"}</Text>
+          </TouchableOpacity>
+        {/*</View>*/}
+      </SafeAreaView>
+    ):(
+      <View style={styles.selectionContainer}>
+        <Text style={styles.stepHeader}>  Select an Event</Text>
+
+        <View style={styles.dropdownWrapper}>
+          <Dropdown
+            events={events}
+            selectedValue={selectedDropdownValue}
+            setSelectedValue={setSelectedDropdownValue}
+          />
+        </View>
+
+        {selectedDropdownValue && (
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={() => setEventId(selectedDropdownValue)}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    )}
+    </>
   );
 }
 
@@ -291,5 +330,61 @@ const styles = StyleSheet.create({
   },
   distanceText:{
     textAlign:'center'
-  }
+  },
+  selectionContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+  backgroundColor: '#f5f7fa',
+  },
+
+  stepHeader: {
+    fontSize: 28,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#333',
+    alignSelf: 'flex-start',
+  },
+
+  dropdownWrapper: {
+    width: '100%',
+    paddingHorizontal: 10,
+    marginBottom: 20,
+  },
+
+  confirmationBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e6f9ea',
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 10,
+  },
+
+  confirmationText: {
+    marginLeft: 8,
+    color: '#2e7d32',
+    fontSize: 14,
+  },
+
+  continueButton: {
+    marginTop: 20,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });
