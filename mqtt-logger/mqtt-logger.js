@@ -45,6 +45,22 @@ mqttClient.on('connect', () => {
   });
 });
 
+mqttClient.on('reconnect', () => {
+  console.log('🔁 Attempting MQTT reconnect...');
+});
+
+mqttClient.on('error', (err) => {
+  console.error('❌ MQTT Error:', err.message);
+});
+
+mqttClient.on('close', () => {
+  console.warn('⚠️ MQTT connection closed.');
+});
+
+mqttClient.on('offline', () => {
+  console.warn('⚠️ MQTT client offline.');
+});
+
 mqttClient.on('message', async (topic, message) => {
     try {
       const data = JSON.parse(message.toString());
@@ -110,6 +126,7 @@ mqttClient.on('message', async (topic, message) => {
 
   
 setInterval( async () => {
+    try {
   for (const eventId in eventsUsers) {
     console.log("Event id: "+eventId);
     const event = await Event.findOne({_id : eventId});
@@ -121,4 +138,15 @@ setInterval( async () => {
     }
   }
   eventsUsers = {};
+  } catch (err) {
+    console.error('❌ Error during interval update:', err.message);
+  }
 }, 30000);
+
+process.on('uncaughtException', (err) => {
+  console.error('🚨 Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+});
