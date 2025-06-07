@@ -16,7 +16,10 @@ var userSchema = new Schema({
  		type: Boolean,
 		default: false
 	},
-	'fcmToken': String
+	'waitingMobile2FA': {
+		type: Boolean,
+		default: false
+	}
 });
 
 userSchema.pre('save', function(next){
