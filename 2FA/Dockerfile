@@ -6,4 +6,4 @@ COPY . .
 RUN pip intall --no-cache-dir -r requirements.txt
 
 EXPOSE 3737
-CMD["python","server.py"]
+CMD ["python", "server.py"]
