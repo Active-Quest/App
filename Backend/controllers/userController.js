@@ -182,7 +182,7 @@ module.exports = {
             return res.status(404).json({message: 'User not found'});
         }
 
-        user.Passed2FA = passed2FA;
+        user.passed2FA = passed2FA;
         user.waitingMobile2FA = false;
         await user.save();
     },
