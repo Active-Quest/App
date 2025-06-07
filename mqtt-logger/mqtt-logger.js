@@ -29,7 +29,10 @@ mongoose.connect(mongoUri, {
 });
 
 //Connect to MQTT Broker
-const mqttClient = mqtt.connect(`mqtt://${mqttHost}`);
+const mqttClient = mqtt.connect(`mqtt://${mqttHost}`, {
+  keepalive: 60,
+  reconnectPeriod: 5000 // Reconnect every 5s
+});
 
 mqttClient.on('connect', () => {
   console.log(`Connected to MQTT broker at ${mqttHost}`);
@@ -104,6 +107,7 @@ mqttClient.on('message', async (topic, message) => {
       console.error('Failed to save message:', err.message);
     }
   });
+
   
 setInterval( async () => {
   for (const eventId in eventsUsers) {
