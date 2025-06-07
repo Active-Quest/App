@@ -12,7 +12,10 @@ var eventSchema = new Schema({
 	'endTime' : Date,
 	'description' : String,
 	'goal' : Number,
-	'activeUsers' : Number
+	'activeUsers' : {
+		type : Number,
+		default : 0
+	}
 	});
 
 var event = mongoose.model('event', eventSchema);
