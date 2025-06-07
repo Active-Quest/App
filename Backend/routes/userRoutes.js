@@ -13,6 +13,7 @@ router.get('/logout', userController.logout);
 router.post('/register', userController.create);
 router.post('/login', userController.login);
 router.post('/mobile-login', userController.mobileLogin);
+router.post('/:id/update2FA',userController.update2FA);
 router.get('/search', userController.find);
 
 router.put('/:id', userController.update);

@@ -7,26 +7,26 @@ from tensorflow.keras.models import load_model
 from libs import libs
 import cv2
 
-# ====== Parameters ======
+# Parameters
 
 IMAGE_SIZE = (224, 224)
 def register_user_logic(user_id, img_paths):
 
-    # ====== Load model ======
+    # Load model
     model = load_model("face_classifier_model.h5")
     embedding_model = tf.keras.models.Model(
         inputs=model.input,
         outputs=model.get_layer("embedding").output
     )
 
-    # ====== Ensure embeddings folder exists ======
+    # Ensure embeddings folder exists
     os.makedirs("embeddings", exist_ok=True)
 
-    # ====== Count existing embeddings to generate unique names ======
+    # Count existing embeddings to generate unique names
     existing = [f for f in os.listdir("embeddings") if f.startswith(user_id) and f.endswith(".npy")]
     start_index = len(existing)
 
-    # ====== Process each image ======
+    # Process each image
     counter = 0
     for img_path in img_paths:
         # Load and resize image

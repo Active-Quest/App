@@ -15,7 +15,8 @@ var userSchema = new Schema({
 	'twoFA': {
  		type: Boolean,
 		default: false
-	}
+	},
+	'fcmToken': String
 });
 
 userSchema.pre('save', function(next){
