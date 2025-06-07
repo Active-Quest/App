@@ -26,7 +26,7 @@ if __name__ == '__main__':
         os.makedirs(save_dir, exist_ok=True)
         next_number = get_next_filename(save_dir, start=1000)
 
-        time.sleep(1)
+        time.sleep(2)
         ret, slika = kamera.read()
         slika=cv.resize(slika, (128, 128))
         cv.imshow('Kamera', cv.flip(slika,1))
@@ -38,29 +38,13 @@ if __name__ == '__main__':
         
         cv.imwrite(image_path, slika)
 
-        imageAugmented=libs.rotate(slika)
-        image_path=os.path.join(save_dir, f"{next_number}.jpg")
-        next_number+= 1
-        
-        cv.imwrite(image_path, imageAugmented)
+        imageAugmented=libs.augmentImage(slika)
+        for i in imageAugmented:
+            image_path=os.path.join(save_dir, f"{next_number}.jpg")
+            next_number+= 1
+            
+            cv.imwrite(image_path, i)
        
-        imageAugmented=libs.rotate(slika,330)
-        image_path=os.path.join(save_dir, f"{next_number}.jpg")
-        next_number+= 1
-        
-        cv.imwrite(image_path, imageAugmented)
-
-        imageAugmented=libs.konvolucija(slika)
-        image_path=os.path.join(save_dir, f"{next_number}.jpg")
-        next_number+= 1
-        
-        cv.imwrite(image_path, imageAugmented)
-
-        imageAugmented=libs.brightenImage(slika)
-        image_path=os.path.join(save_dir, f"{next_number}.jpg")
-        next_number+= 1
-        
-        cv.imwrite(image_path, imageAugmented)
 
         kamera.release()
         cv.destroyAllWindows()

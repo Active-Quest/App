@@ -19,11 +19,11 @@ def rotate(slika,angle=30):
 
 def flip(slika , direction = "h"):
     if direction == "h":
-        cv.flip(slika , 1) # obrne sliko horiziotalno
+        slika=cv.flip(slika , 1) # obrne sliko horiziotalno
     elif direction == "v":
-        cv.flip(slika , 0) # obrne sliko vertikalno
+        slika=cv.flip(slika , 0) # obrne sliko vertikalno
     elif direction == "b":
-        cv.flip(slika , -1) # obrne sliko horiziotalno in vertikalno
+        slika=cv.flip(slika , -1) # obrne sliko horiziotalno in vertikalno
     return slika
 
 def brightenImage(slika, brightnessIncrease=30):
@@ -57,3 +57,12 @@ def konvolucija(slika):
                 izhodna_slika[i, j, c] = np.sum(region * jedro)
 
     return np.clip(izhodna_slika, 0, 255).astype(np.uint8)
+
+def augmentImage(slika):
+    slikaRo1=rotate(slika,30)
+    slikaRo2=rotate(slika,320)
+    slikaBri=brightenImage(slika)
+    slikaKon=konvolucija(slika)
+    slikaFlip=flip(slika,"h")
+
+    return [slikaRo1, slikaRo2, slikaBri, slikaKon, slikaFlip]
