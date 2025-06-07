@@ -2,6 +2,7 @@ require('dotenv').config();
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
 const Activity = require('./models/activityModel.js');
+const Event = require('./models/eventModel.js');
 
 //Load ENV Vars
 const mqttHost = process.env.MQTT_HOST;
@@ -13,6 +14,8 @@ if (!mqttHost || !mqttTopic || !mongoUri) {
   console.error('Missing required environment variables: MONGO_URI, MQTT_HOST, or MQTT_TOPIC');
   process.exit(1);
 }
+
+let eventsUsers = {};
 
 //Connect to MongoDB
 mongoose.connect(mongoUri, {
@@ -45,12 +48,21 @@ mqttClient.on('message', async (topic, message) => {
   
       const activityId = data.activityId?.toString();
       const userId = data.userId?.toString();
+      const eventId = data.eventId?.toString();
   
       if (!activityId || !userId) {
         console.error('Missing activityId or userID in message');
         return;
       }
+
+      if (!eventsUsers[eventId]) {
+        eventsUsers[eventId] = [];
+      }
   
+      if(!eventsUsers[eventId].includes(userId)){
+        eventsUsers[eventId].push(userId);
+      }
+
       const existing = await Activity.findOne({ activityId:activityId });
   
       const waypoint = {
@@ -59,7 +71,7 @@ mqttClient.on('message', async (topic, message) => {
         alt: data.altitude?.toString() || '',
         time: new Date()
       };
-  
+
       if (existing) {
         existing.waypoints.push(waypoint);
         await existing.updateOne({
@@ -73,19 +85,36 @@ mqttClient.on('message', async (topic, message) => {
         const newActivity = new Activity({
           activityId,
           userId,
-          eventId: new mongoose.Types.ObjectId(),
+          eventId: eventId,
           startTime: new Date(),
           duration: '0:01',
           distance: '0.00',
           waypoints: [waypoint],
           avgSpeed: 0
+         
         });
-  
+
+       
+
         await newActivity.save();
         console.log(`Created new activity: ${activityId}`);
       }
+      
     } catch (err) {
       console.error('Failed to save message:', err.message);
     }
   });
   
+setInterval( async () => {
+  for (const eventId in eventsUsers) {
+    console.log("Event id: "+eventId);
+    const event = await Event.findOne({_id : eventId});
+    if(event){
+      await event.updateOne({
+        activeUsers : eventsUsers[eventId].length
+      })
+      console.log("Number of users: "+eventsUsers[eventId].length);
+    }
+  }
+  eventsUsers = {};
+}, 30000);

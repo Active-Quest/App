@@ -245,48 +245,70 @@ find: async function (req, res) {
         return res.status(500).json({
             message: 'Error during search',
             error: err.message || err
-        });
-    }
-},
+            });
+        }
+    },
 
-add: async function (req, res) {
-    try {
-        const userId = req.params.id;
-        const { friendId } = req.body;
+    add: async function (req, res) {
+        try {
+            const userId = req.params.id;
+            const friendId = req.body.friendId;
 
-        if (!friendId) {
+
+            if (!friendId) {
             return res.status(400).json({ message: 'friendId is required in body' });
-        }
+            }
 
-        const user = await UserModel.findById(userId);
-        if (!user) {
+            const user = await UserModel.findById(userId);
+            if (!user) {
             return res.status(404).json({ message: 'User not found' });
-        }
+            }
 
-        if (!user.friends.includes(friendId)) {
+            if (!user.friends.includes(friendId)) {
             user.friends.push(friendId);
+            }
+
+            const savedUser = await user.save();
+            return res.status(201).json(savedUser);
+        } catch (err) {
+            console.error("==> ADD FRIEND ERROR", err);
+            return res.status(500).json({ message: 'Error updating friends list', error: err.message });
         }
+    },
 
-        const savedUser = await user.save();
-        return res.status(201).json(savedUser);
-    } catch (err) {
-        console.error("==> ADD FRIEND ERROR", err);
-        return res.status(500).json({ message: 'Error updating friends list', error: err.message });
-    }
-},
-
-listFriends: async function (req, res) {
-    try {
-        const user = await UserModel.findById(req.params.id).populate('friends');
-        if (!user) {
+    listFriends: async function (req, res) {
+        try {
+            const user = await UserModel.findById(req.params.id).populate('friends');
+            if (!user) {
             return res.status(404).json({ message: 'User not found' });
+            }
+            return res.json(user.friends);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error fetching friends list', error: err.message });
         }
-        return res.json(user.friends);
-    } catch (err) {
-        return res.status(500).json({ message: 'Error fetching friends list', error: err.message });
-    }
-}
+    },
 
+    update2FA: async function (req,res){
+        try {
+            const user = await UserModel.findById(req.params.id);
+            if(!user){
+                return res.status(404).json({message:'User not found'});
+            }
+            const status2FA = req.body.boolean2FA;
+            user.twoFA = status2FA;
     
-
+            try {
+                    const savedUser = await user.save();
+                    return res.status(201).json(savedUser);
+                } catch (err) {
+                    return res.status(500).json({
+                        message: 'Error saving 2FA boolean',
+                        error: err.message || err
+                    });
+                }
+        }catch(err){
+            return res.status(500).json({ message: 'Error when updating 2FA choice', error: err.message });
+        }
+    }
+           
 };
