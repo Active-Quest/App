@@ -1,20 +1,19 @@
 import React, {useState,useEffect, useCallback} from "react";
 import {Text, View, StyleSheet, Button, TouchableOpacity, ActivityIndicator} from "react-native";
-
+import Activities from "../../src/activities";
 
 export default function Index(){
    return(
     <View style={styles.container}>
-        <Text>WELCOME TO ACTIVE QUEST</Text>
-   </View>
+        <Activities></Activities>
+    </View>
+    
    );
 }
 
 const styles = StyleSheet.create({
     container :{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
+        flexDirection:'column',
         gap:10
     },
     button: {
