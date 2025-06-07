@@ -1,33 +1,40 @@
 import { useEffect, useState } from 'react';
 import './ActivityCard.css';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faMap } from '@fortawesome/free-solid-svg-icons';
+import L from 'leaflet';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMap, faUser, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
 
 export default function ActivityCard({ activity }) {
   const [expanded, setExpanded] = useState(false);
-  const [user,setUser] = useState(null);
-  
-  useEffect(()=>{
-    const getUserData = async() => {
+  const [showGraph, setShowGraph] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const getUserData = async () => {
       const res = await fetch(`http://activequest.ddns.net:3002/users/${activity.userId}`);
-      if(!res.ok){
+      if (!res.ok) {
         console.warn("Failed to get activity user data");
         return;
       }
-
       const data = await res.json();
       setUser(data);
-    }
+    };
     getUserData();
-  });
+  }, [activity.userId]);
 
+  const path = Array.isArray(activity.waypoints) && activity.waypoints.length > 0
+    ? activity.waypoints.map(wp => [wp.lat, wp.lon])
+    : [];
 
-  //console.log(activity);
-  const path = Array.isArray(activity.waypoints)
-  ? activity.waypoints.map(wp => [wp.lat, wp.lon])
-  : [];
+  const graphData = activity?.waypoints?.map((wp, index) => ({
+    index,
+    speed: parseFloat(wp.speed || 0),
+    alt: parseFloat(wp.alt || 0),
+  })) || [];
 
   const startIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
@@ -46,40 +53,83 @@ export default function ActivityCard({ activity }) {
   return (
     <div className="activity-card-container">
       <div className="activity-card">
-        <div className="activity-data">
-          <p><strong>{user?.firstName} {user?.lastName}</strong></p>
-          <p><strong>Duration:</strong> {activity.duration}</p>
-          <p><strong>Distance:</strong> {(activity.distance/1000).toFixed(3)} km</p>
+        <div className="activity-header">
+          <FontAwesomeIcon icon={faUser} />{' '}
+          <strong>{user?.firstName} {user?.lastName}</strong>
         </div>
 
-        <FontAwesomeIcon className="map-icon" icon={faMap} onClick={() => setExpanded(!expanded)}/>
-
-        {expanded && (
-          <div className="expanded-section">
-            <MapContainer
-            center={path[0]}
-            zoom={20}
-            style={{height:'400px',width:'100%'}}
-            >
-            
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap contributors"
-            />
-            <Polyline positions={path} color='blue'/>
-            <Marker position={path[0]} icon={startIcon}>
-              <Popup>Start</Popup>
-            </Marker>
-
-            <Marker position={path[path.length-1]} icon={endIcon}>
-              <Popup>Finish</Popup>
-            </Marker>
-            </MapContainer>
-            <p><strong>Start Time:</strong> {new Date(activity.startTime).toLocaleString()}</p>
-            <p><strong>Avg Speed:</strong> {activity.avgSpeed ?? 'N/A'} km/h</p>
-            <p><strong>Event ID:</strong> {activity.eventId}</p>
+        <div className="activity-table">
+          <div className="table-row header">
+            <div className="cell">Feature</div>
+            <div className="cell">Activity</div>
           </div>
+          <div className="table-row">
+            <div className="cell">Duration</div>
+            <div className="cell">{activity.duration}</div>
+          </div>
+          <div className="table-row">
+            <div className="cell">Distance</div>
+            <div className="cell">{(activity.distance / 1000).toFixed(3)} km</div>
+          </div>
+          <div className="table-row">
+            <div className="cell">Avg Speed</div>
+            <div className="cell">{activity.avgSpeed ?? 'N/A'} km/h</div>
+          </div>
+        </div>
 
+        <div className="icon-toggle">
+          <FontAwesomeIcon className="map-icon" icon={faMap} onClick={() => setExpanded(!expanded)} />
+          <FontAwesomeIcon className="map-icon" icon={faChartLine} onClick={() => setShowGraph(!showGraph)} />
+        </div>
+
+        {expanded && path.length > 0 && (
+          <div className="expanded-section">
+            <MapContainer center={path[0]} zoom={20} style={{ height: '400px', width: '100%' }}>
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+              />
+              <Polyline positions={path} color="blue" />
+              <Marker position={path[0]} icon={startIcon}>
+                <Popup>Start</Popup>
+              </Marker>
+              <Marker position={path[path.length - 1]} icon={endIcon}>
+                <Popup>Finish</Popup>
+              </Marker>
+            </MapContainer>
+          </div>
+        )}
+
+        {showGraph && (
+          <div className="expanded-section">
+            <h4>Speed & Altitude</h4>
+            <div className="graph-row">
+              <div className="graph-box">
+                <h5>Speed</h5>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={graphData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="index" />
+                    <YAxis unit=" km/h" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="speed" stroke="#3DA35D" strokeWidth={3} dot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="graph-box">
+                <h5>Altitude</h5>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={graphData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="index" />
+                    <YAxis unit=" m" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="alt" stroke="#96E072" strokeWidth={3} dot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

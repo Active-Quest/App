@@ -15,13 +15,13 @@ from sklearn.metrics.pairwise import euclidean_distances
 
 print("Zagon skripte se je začel.")
 
-# --- Parametri ---
+# Parametri
 IMAGE_SIZE = (224, 224)
 BATCH_SIZE = 16
 EPOCHS = 10
 EMBEDDING_DIM = 128
 
-# --- Priprava podatkov ---
+# Priprava podatkov
 datagen = ImageDataGenerator(preprocessing_function=preprocess_input, validation_split=0.2)
 
 train_data = datagen.flow_from_directory(
@@ -43,7 +43,7 @@ val_data = datagen.flow_from_directory(
 print("Podatki naloženi:", train_data.samples, "slik")
 
 
-# --- Gradnja modela ---
+# Gradnja modela
 base_model = VGGFace(model='resnet50', include_top=False, input_shape=(224, 224, 3), pooling='avg')
 base_model.trainable = False  # zamrzni VGG plasti
 
@@ -56,15 +56,15 @@ model = Model(inputs=base_model.input, outputs=output)
 model.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
 model.summary()
 
-# --- Treniranje ---
+# Treniranje
 model.fit(train_data, validation_data=val_data, epochs=EPOCHS)
 model.save("face_classifier_model.h5")
 print("[✓] Model shranjen kot face_classifier_model.h5")
 
-# --- Ustvari embedding model brez softmaxa ---
+# Ustvari embedding model brez softmaxa
 embedding_model = Model(inputs=model.input, outputs=model.get_layer("embedding").output)
 
-# --- Shrani embeddinge za vsako sliko ---
+# Shrani embeddinge za vsako sliko
 os.makedirs("embeddings", exist_ok=True)
 
 for class_label in os.listdir("dataset"):
