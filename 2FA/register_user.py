@@ -38,6 +38,7 @@ def register_user_logic(user_id, img_paths):
         for aug_img in augmented_images:
             # Preprocess
             aug_img = np.expand_dims(aug_img, axis=0)
+            aug_img = aug_img.astype(np.float32)
             aug_img = preprocess_input(aug_img)
 
             # Get embedding and normalize
