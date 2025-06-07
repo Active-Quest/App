@@ -113,7 +113,7 @@ setInterval( async () => {
       event.updateOne({
         activeUsers : eventsUsers[eventId].length
       })
-      console.log("Number of users: "+eventsUsers[eventId].length +eventsUsers[eventId].size());
+      console.log("Number of users: "+eventsUsers[eventId].length);
     }
     await event.save();
   }
