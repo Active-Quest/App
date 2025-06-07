@@ -1,6 +1,4 @@
 images/
 .venv
 dataset/
-face_clssifier_model.h5
-*.h5
-*.zip
+
