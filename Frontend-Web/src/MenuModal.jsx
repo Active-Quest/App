@@ -80,6 +80,7 @@ const MenuModal = ({ onClose }) => {
             if(data.twoFARequired){
                 alert(data.message);
                 poll2FAStatus(data.userId);
+                return;
             }
 
             if (res.ok && data.token && data.user) {
