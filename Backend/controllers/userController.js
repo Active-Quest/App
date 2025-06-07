@@ -341,10 +341,8 @@ find: async function (req, res) {
                 return res.status(404).json({message:'User not found'});
             }
             const status2FA = req.body.boolean2FA;
-            const token = req.body.fcmToken;
             user.twoFA = status2FA;
-            user.fcmToken = token;
-    
+        
             try {
                     const savedUser = await user.save();
                     return res.status(201).json(savedUser);
