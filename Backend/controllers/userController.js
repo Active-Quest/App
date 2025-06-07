@@ -127,7 +127,14 @@ module.exports = {
             }
 
             if(user.twoFA==true){
-            sendLoginNotification(user.fcmToken,user.firstName);
+                user.waitingMobile2FA = true;
+
+                await user.save();
+               return res.json({
+                twoFARequired: true,
+                userId: user._id,
+                message: '2FA required. Please verify on your phone.',
+              });
             }
 
             const token = jwt.sign(
@@ -141,29 +148,68 @@ module.exports = {
             return next(err);
         }
     },
-
-profile: async function (req, res, next) {
-    try {
-        const user = await UserModel.findById(req.session.userId);
+    check2FAStatus: async function (req, res, next) {
+      try {
+        const userId = req.params.id;
+    
+        const user = await UserModel.findById(userId);
         if (!user) {
-            return res.status(400).json({ message: 'Not authorized' });
+          return res.status(404).json({ message: 'User not found' });
         }
-        return res.json(user);
-    } catch (err) {
+    
+        //2FA passed
+        if (user.passed2FA === true) {
+            //continue normally with sign in
+          const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+          );
+          return res.json({ passed2FA: true, token });
+        } else {
+          return res.json({ passed2FA: false });
+        }
+      } catch (err) {
         return next(err);
-    }
-},
+      }
+    },
 
-logout: async function (req, res, next) {
-    try {
-        if (req.session) {
-            req.session.destroy();
-            return res.status(201).json({});
+    update2FAResult: async function (req,res){
+        const {passed2FA} = req.body;
+        const userId = req.params.id;
+        const user = await UserModel.findById(userId);
+        if(!user){
+            return res.status(404).json({message: 'User not found'});
         }
-    } catch (err) {
-        return next(err);
-    }
-},
+
+        user.Passed2FA = passed2FA;
+        user.waitingMobile2FA = false;
+        await user.save();
+    },
+
+
+    profile: async function (req, res, next) {
+        try {
+            const user = await UserModel.findById(req.session.userId);
+            if (!user) {
+                return res.status(400).json({ message: 'Not authorized' });
+            }
+            return res.json(user);
+        } catch (err) {
+            return next(err);
+        }
+    },
+
+    logout: async function (req, res, next) {
+        try {
+            if (req.session) {
+                req.session.destroy();
+                return res.status(201).json({});
+            }
+        } catch (err) {
+            return next(err);
+        }
+    },
 
 mobileLogin: async function (req, res, next) {
     try {
@@ -311,6 +357,6 @@ find: async function (req, res) {
         }catch(err){
             return res.status(500).json({ message: 'Error when updating 2FA choice', error: err.message });
         }
-    }
+    },
            
 };

@@ -14,7 +14,9 @@ router.post('/register', userController.create);
 router.post('/login', userController.login);
 router.post('/mobile-login', userController.mobileLogin);
 router.post('/:id/update2FA',userController.update2FA);
+router.post('/:id/update2FAResult', userController.update2FAResult);
 router.get('/search', userController.find);
+router.get('/checkFAStatus/:id',userController.check2FAStatus)
 
 router.put('/:id', userController.update);
 router.delete('/:id', userController.remove);
