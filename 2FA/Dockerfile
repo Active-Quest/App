@@ -1,7 +1,7 @@
 FROM python:3.10
 
 WORKDIR /app
-COPY ..
+COPY . .
 
 RUN pip intall --no-cache-dir -r requirements.txt
 
