@@ -8,7 +8,7 @@ var userSchema = new Schema({
 	'email' : String,
 	'password' : String,
 	'friends' : {
-		type: [Schema.Types.ObjectId],
+		type: [mongoose.Schema.Types.ObjectId],
 		ref: 'user',
 		default : []
 	}

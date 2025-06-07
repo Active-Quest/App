@@ -258,6 +258,76 @@ module.exports = {
             return res.status(401).json({ message: 'Invalid token', error: err.message });
         }
     },
+
+    find: async function (req, res) {
+        try {
+            const { firstName, lastName } = req.query;
+
+            if (!firstName && !lastName) {
+            return res.status(400).json({ message: 'At least one of firstName or lastName is required.' });
+            }
+
+            const query = {};
+            if (firstName) {
+            query.firstName = { $regex: firstName, $options: 'i' };
+            }
+            if (lastName) {
+            query.lastName = { $regex: lastName, $options: 'i' };
+            }
+
+            const users = await UserModel.find(query);
+
+            return res.json(users);
+        } catch (err) {
+            return res.status(500).json({
+            message: 'Error during search',
+            error: err.message || err
+            });
+        }
+    },
+
+    add: async function (req, res) {
+        try {
+            const userId = req.params.id;
+            const friendId = req.body.friendId;
+
+
+            if (!friendId) {
+            return res.status(400).json({ message: 'friendId is required in body' });
+            }
+
+            const user = await UserModel.findById(userId);
+            if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+            }
+
+            if (!user.friends.includes(friendId)) {
+            user.friends.push(friendId);
+            }
+
+            const savedUser = await user.save();
+            return res.status(201).json(savedUser);
+        } catch (err) {
+            console.error("==> ADD FRIEND ERROR", err);
+            return res.status(500).json({ message: 'Error updating friends list', error: err.message });
+        }
+    },
+
+    listFriends: async function (req, res) {
+        try {
+            const user = await UserModel.findById(req.params.id).populate('friends');
+            if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+            }
+            return res.json(user.friends);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error fetching friends list', error: err.message });
+        }
+    }
+
+
+
+
     
     
 };

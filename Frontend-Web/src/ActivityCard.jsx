@@ -49,7 +49,7 @@ export default function ActivityCard({ activity }) {
         <div className="activity-data">
           <p><strong>{user?.firstName} {user?.lastName}</strong></p>
           <p><strong>Duration:</strong> {activity.duration}</p>
-          <p><strong>Distance:</strong> {activity.distance} km</p>
+          <p><strong>Distance:</strong> {(activity.distance/1000).toFixed(3)} km</p>
         </div>
 
         <FontAwesomeIcon className="map-icon" icon={faMap} onClick={() => setExpanded(!expanded)}/>

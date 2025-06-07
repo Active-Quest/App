@@ -8,6 +8,12 @@
   position: relative;
 }
 
+.icon-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .header-logo {
   height: 40px;
 }
@@ -38,4 +44,5 @@
 .icon-button {
   cursor: pointer;
   font-size: 20px;
+  margin-left: 20px;
 }
