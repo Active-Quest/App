@@ -1,0 +1,6 @@
+.DS_Store
+*.pem
+.venv310
+dataset/
+*.h5
+*.zip
