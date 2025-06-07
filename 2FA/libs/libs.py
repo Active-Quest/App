@@ -58,7 +58,10 @@ def konvolucija(slika):
 
     return np.clip(izhodna_slika, 0, 255).astype(np.uint8)
 
-def augmentImage(slika):
+def augmentImage(slika_path):
+
+    slika = cv.imread(slika_path)
+
     slikaRo1=rotate(slika,30)
     slikaRo2=rotate(slika,320)
     slikaBri=brightenImage(slika)
