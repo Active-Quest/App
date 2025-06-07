@@ -12,8 +12,8 @@ const THEME_OPTIONS = [
 
 
 //const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
-const API_URL = "http://activequest.ddns.net:3002";
-//const API_URL = 'http://localhost:3002';
+//const API_URL = "http://activequest.ddns.net:3002";
+const API_URL = 'http://localhost:3002';
 
 console.log("Using backend:", API_URL);
 
@@ -77,6 +77,10 @@ const MenuModal = ({ onClose }) => {
             });
 
             const data = await res.json();
+            if(data.twoFARequired){
+                alert(data.message);
+                poll2FAStatus(data.userId);
+            }
 
             if (res.ok && data.token && data.user) {
                 localStorage.setItem("token", data.token);
@@ -88,6 +92,24 @@ const MenuModal = ({ onClose }) => {
         } catch {
             alert("Server error during login");
         }
+    };
+
+    const poll2FAStatus = (userId) => {
+        const intervalId = setInterval(async () => {
+            try {
+            const res = await fetch(`${API_URL}/users/check2FAStatus/${userId}`);
+            const data = await res.json();
+
+            if (data.passed2FA) {
+                clearInterval(intervalId);
+                localStorage.setItem("token", data.token);
+                alert("2FA verified! Logging you in...");
+                setUser(prevUser => ({ ...prevUser, twoFA: true }));
+            }
+            } catch (error) {
+            console.error("Error polling 2FA status:", error);
+            }
+        }, 5000);
     };
 
     const handleRegister = async e => {

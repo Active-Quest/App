@@ -127,6 +127,9 @@ module.exports = {
             }
 
             if(user.twoFA==true){
+                user.waitingMobile2FA = true;
+
+                await user.save();
                return res.json({
                 twoFARequired: true,
                 userId: user._id,
@@ -341,6 +344,6 @@ find: async function (req, res) {
         }catch(err){
             return res.status(500).json({ message: 'Error when updating 2FA choice', error: err.message });
         }
-    }
+    },
            
 };
