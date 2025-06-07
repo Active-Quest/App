@@ -11,6 +11,10 @@ var userSchema = new Schema({
 		type: [Schema.Types.ObjectId],
 		ref: 'user',
 		default : []
+	},
+	'twoFA': {
+ 		type: Boolean,
+		default: false
 	}
 });
 
