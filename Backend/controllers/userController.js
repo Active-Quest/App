@@ -174,29 +174,42 @@ module.exports = {
       }
     },
 
-
-profile: async function (req, res, next) {
-    try {
-        const user = await UserModel.findById(req.session.userId);
-        if (!user) {
-            return res.status(400).json({ message: 'Not authorized' });
+    update2FAResult: async function (req,res){
+        const {passed2FA} = req.body;
+        const userId = req.params.id;
+        const user = await UserModel.findById(userId);
+        if(!user){
+            return res.status(404).json({message: 'User not found'});
         }
-        return res.json(user);
-    } catch (err) {
-        return next(err);
-    }
-},
 
-logout: async function (req, res, next) {
-    try {
-        if (req.session) {
-            req.session.destroy();
-            return res.status(201).json({});
+        user.Passed2FA = passed2FA;
+        user.waitingMobile2FA = false;
+        await user.save();
+    },
+
+
+    profile: async function (req, res, next) {
+        try {
+            const user = await UserModel.findById(req.session.userId);
+            if (!user) {
+                return res.status(400).json({ message: 'Not authorized' });
+            }
+            return res.json(user);
+        } catch (err) {
+            return next(err);
         }
-    } catch (err) {
-        return next(err);
-    }
-},
+    },
+
+    logout: async function (req, res, next) {
+        try {
+            if (req.session) {
+                req.session.destroy();
+                return res.status(201).json({});
+            }
+        } catch (err) {
+            return next(err);
+        }
+    },
 
 mobileLogin: async function (req, res, next) {
     try {
