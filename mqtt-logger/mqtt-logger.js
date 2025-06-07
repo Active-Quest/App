@@ -15,7 +15,7 @@ if (!mqttHost || !mqttTopic || !mongoUri) {
   process.exit(1);
 }
 
-const eventsUsers = {};
+let eventsUsers = {};
 
 //Connect to MongoDB
 mongoose.connect(mongoUri, {
