@@ -5,6 +5,7 @@ from tensorflow.keras.preprocessing import image
 from keras_vggface.utils import preprocess_input
 from tensorflow.keras.models import load_model
 from libs import libs
+import cv2
 
 # ====== Parameters ======
 
