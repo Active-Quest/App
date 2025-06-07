@@ -19,6 +19,10 @@ var userSchema = new Schema({
 	'waitingMobile2FA': {
 		type: Boolean,
 		default: false
+	},
+	'passed2FA': {
+		type: Boolean,
+		default: false
 	}
 });
 
