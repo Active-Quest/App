@@ -3,6 +3,7 @@ import { Modal, View, Text, Button, Image, StyleSheet, TouchableOpacity, Activit
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 export default function Enable2FA({ visible, onClose, onImagePicked }) {
   const [images, setImages] = useState([]);
   const [isLoading,setIsLoading] = useState(false);
@@ -78,6 +79,7 @@ export default function Enable2FA({ visible, onClose, onImagePicked }) {
             setIsLoading(false);
             if(data.status == "ok"){
                 Alert.alert("2FA enabled!")
+                updateUser2FA();
                 onClose();
             }else{
                 Alert.alert("Error occured!");

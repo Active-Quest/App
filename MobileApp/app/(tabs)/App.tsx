@@ -212,6 +212,7 @@ export default function App() {
 
                 const interval = setInterval(async() => {
                   console.log('SENT TIME: ', formatTime(durationRef.current));
+                  console.log("SENT EVENT ID:", eventId);
                   let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current),eventId);//Wait for data from function
                   if(location?.latitude && location?.longitude){
                     setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
