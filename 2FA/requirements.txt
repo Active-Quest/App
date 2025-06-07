@@ -6,3 +6,4 @@ numpy<2
 scikit-learn
 opencv-python
 pillow
+flask
