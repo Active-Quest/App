@@ -56,12 +56,11 @@ mqttClient.on('message', async (topic, message) => {
       }
 
       if (!eventsUsers[eventId]) {
-        eventsUsers[eventId] = new Set();
-        console.log(`New eventId added: ${eventId}`);
+        eventsUsers[eventId] = [];
       }
   
       if(!eventsUsers[eventId].includes(userId)){
-        eventsUsers[eventId].add(userId);
+        eventsUsers[eventId].push(userId);
       }
 
       const existing = await Activity.findOne({ activityId:activityId });
