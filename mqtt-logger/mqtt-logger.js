@@ -107,10 +107,12 @@ mqttClient.on('message', async (topic, message) => {
   
 setInterval( async () => {
   for (const eventId in eventsUsers) {
-    const event = await Event.findOne({eventId : eventId});
-    event.updateOne({
-      activeUsers : eventsUsers[eventId].size
-    })
+    const event = await Event.findOne({_id : eventId});
+    if(event){
+      event.updateOne({
+        activeUsers : eventsUsers[eventId].size
+      })
+    }
   }
   eventsUsers = {};
 }, 30000);
