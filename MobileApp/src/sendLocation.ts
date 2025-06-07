@@ -21,7 +21,7 @@ function calculateDistance(coord1: { latitude: number, longitude: number }, coor
 }
 
 
-export const sendLocation = async (userId : String, activityId : String, duration: string) => {
+export const sendLocation = async (userId : String, activityId : String, duration: string, eventId: string) => {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
     console.warn('Location permission not granted');
@@ -47,7 +47,8 @@ export const sendLocation = async (userId : String, activityId : String, duratio
     longitude: coords.longitude,
     altitude: coords.altitude,
     distance: distance,
-    duration: duration
+    duration: duration,
+    eventId: eventId
   }));
 
   let latitude = coords.latitude;

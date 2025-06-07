@@ -212,7 +212,7 @@ export default function App() {
 
                 const interval = setInterval(async() => {
                   console.log('SENT TIME: ', formatTime(durationRef.current));
-                  let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current));//Wait for data from function
+                  let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current),eventId);//Wait for data from function
                   if(location?.latitude && location?.longitude){
                     setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
                     setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
