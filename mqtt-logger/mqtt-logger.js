@@ -111,9 +111,9 @@ setInterval( async () => {
     const event = await Event.findOne({_id : eventId});
     if(event){
       event.updateOne({
-        activeUsers : eventsUsers[eventId].size
+        activeUsers : eventsUsers[eventId].size()
       })
-      console.log("Number of users: "+eventsUsers[eventId].size);
+      console.log("Number of users: "+eventsUsers[eventId].size());
     }
     await event.save();
   }
