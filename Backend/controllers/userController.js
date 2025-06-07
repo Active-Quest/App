@@ -323,11 +323,29 @@ module.exports = {
         } catch (err) {
             return res.status(500).json({ message: 'Error fetching friends list', error: err.message });
         }
+    },
+
+    update2FA: async function (req,res){
+        try {
+            const user = await UserModel.findById(req.params.id);
+            if(!user){
+                return res.status(404).json({message:'User not found'});
+            }
+            const status2FA = req.body.boolean2FA;
+            user.twoFA = status2FA;
+    
+            try {
+                    const savedUser = await user.save();
+                    return res.status(201).json(savedUser);
+                } catch (err) {
+                    return res.status(500).json({
+                        message: 'Error saving 2FA boolean',
+                        error: err.message || err
+                    });
+                }
+        }catch(err){
+            return res.status(500).json({ message: 'Error when updating 2FA choice', error: err.message });
+        }
     }
-
-
-
-
-    
-    
+           
 };
