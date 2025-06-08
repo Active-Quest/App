@@ -114,7 +114,7 @@ export default function ActivityCard({ activity }) {
                   <LineChart data={graphData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="index" />
-                    <YAxis unit=" km/h" />
+                    <YAxis unit="km/h" />
                     <Tooltip formatter={(value) => `${parseFloat(value).toFixed(2)}`} />
                     <Line type="monotone" dataKey="speed" stroke="#3DA35D" strokeWidth={3} dot={{ r: 5 }} />
                   </LineChart>
@@ -126,7 +126,7 @@ export default function ActivityCard({ activity }) {
                   <LineChart data={graphData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="index" />
-                    <YAxis unit=" m" />
+                    <YAxis unit="m" />
                     <Tooltip formatter={(value) => `${parseFloat(value).toFixed(2)}`} />
                     <Line type="monotone" dataKey="alt" stroke="#96E072" strokeWidth={3} dot={{ r: 5 }} />
                   </LineChart>
