@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend&display=swap');
+
 html, body {
     margin: 0;
     padding: 0;
@@ -63,5 +65,9 @@ html, body {
     --color-primary:   #3DA35D; 
     --color-accent:    #96E072; 
     --color-surface:   #E8FCCF; 
+}
+
+body {
+  font-family: 'Lexend', sans-serif;
 }
   
