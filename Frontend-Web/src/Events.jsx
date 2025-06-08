@@ -139,7 +139,7 @@ const Events = () => {
               <h3>{event.title}</h3>
               <div className="event-users">
                 <FontAwesomeIcon icon={faUser} className="user-icon" />
-                <span className="user-count">0</span>
+                <span className="user-count">{event.activeUsers}</span>
               </div>
             </div>
             <p>Type: {event.type} | Goal: {event.goal} km</p>
