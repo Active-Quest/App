@@ -29,10 +29,7 @@ mongoose.connect(mongoUri, {
 });
 
 //Connect to MQTT Broker
-const mqttClient = mqtt.connect(`mqtt://${mqttHost}`, {
-  keepalive: 60,
-  reconnectPeriod: 5000 // Reconnect every 5s
-});
+const mqttClient = mqtt.connect(`mqtt://${mqttHost}`);
 
 mqttClient.on('connect', () => {
   console.log(`Connected to MQTT broker at ${mqttHost}`);
@@ -45,21 +42,6 @@ mqttClient.on('connect', () => {
   });
 });
 
-mqttClient.on('reconnect', () => {
-  console.log('🔁 Attempting MQTT reconnect...');
-});
-
-mqttClient.on('error', (err) => {
-  console.error('❌ MQTT Error:', err.message);
-});
-
-mqttClient.on('close', () => {
-  console.warn('⚠️ MQTT connection closed.');
-});
-
-mqttClient.on('offline', () => {
-  console.warn('⚠️ MQTT client offline.');
-});
 
 mqttClient.on('message', async (topic, message) => {
     try {
@@ -80,6 +62,21 @@ mqttClient.on('message', async (topic, message) => {
   
       if(!eventsUsers[eventId].includes(userId)){
         eventsUsers[eventId].push(userId);
+      }
+
+      if(data.finished){
+        eventsUsers[eventId] = eventsUsers[eventId].filter(id => id !== userId);
+        try{
+          const event = await Event.findOne({_id : eventId});
+          if(event){
+            await event.updateOne({
+              activeUsers : eventsUsers[eventId].length
+            })
+            console.log("Number of users: "+eventsUsers[eventId].length);
+            }
+          } catch (err) {
+            console.error('Error during interval update:', err.message);
+          }
       }
 
       const existing = await Activity.findOne({ activityId:activityId });
@@ -123,30 +120,3 @@ mqttClient.on('message', async (topic, message) => {
       console.error('Failed to save message:', err.message);
     }
   });
-
-  
-setInterval( async () => {
-    try {
-  for (const eventId in eventsUsers) {
-    console.log("Event id: "+eventId);
-    const event = await Event.findOne({_id : eventId});
-    if(event){
-      await event.updateOne({
-        activeUsers : eventsUsers[eventId].length
-      })
-      console.log("Number of users: "+eventsUsers[eventId].length);
-    }
-  }
-  eventsUsers = {};
-  } catch (err) {
-    console.error('❌ Error during interval update:', err.message);
-  }
-}, 30000);
-
-process.on('uncaughtException', (err) => {
-  console.error('🚨 Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
-});
