@@ -205,15 +205,36 @@ export default function App() {
 
                 if(!newState){
                   stopStopwatch();
+
+                  if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                  }
+
+                  await sendLocation(user?.id, idToUse, formatTime(durationRef.current), eventId, true);
+                  AsyncStorage.removeItem('prevCoord');
+
                   return; //If we just stopped dont start the interval
                 } 
                 
                 startStopwatch();
 
-                const interval = setInterval(async() => {
+                intervalRef.current = setInterval(async () => {
+                  if (!userDoingActivityRef.current) {
+                    if (intervalRef.current !== null) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                    return;
+                    }
+                  }
+                  
+
+
+          
                   console.log('SENT TIME: ', formatTime(durationRef.current));
                   console.log("SENT EVENT ID:", eventId);
-                  let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current),eventId);//Wait for data from function
+                  let location = await sendLocation(user?.id, idToUse, formatTime(durationRef.current),eventId,false);//Wait for data from function
+
                   if(location?.latitude && location?.longitude){
                     setCurrentLocation({latitude: location.latitude, longitude: location.longitude});
                     setPath(prev => [...prev, {latitude:location.latitude,longitude:location.longitude}]);
@@ -236,10 +257,7 @@ export default function App() {
                   console.log(`Activity:  ${idToUse}`);*/
                   
 
-                  if (!userDoingActivityRef.current) {
-                    clearInterval(interval);
-                    AsyncStorage.removeItem('prevCoord');
-                  }
+                 
                 }, 10000);
               };
               
