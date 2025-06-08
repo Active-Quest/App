@@ -66,7 +66,7 @@ mqttClient.on('message', async (topic, message) => {
           const event = await Event.findOne({_id : eventId});
           if(event){
             await event.updateOne({
-              activeUsers : eventsUsers[eventId].length
+              activeUsers : eventsUsers[eventId]
             })
             console.log("Number of users: "+eventsUsers[eventId].length);
             }
@@ -81,7 +81,7 @@ mqttClient.on('message', async (topic, message) => {
           const event = await Event.findOne({_id : eventId});
           if(event){
             await event.updateOne({
-              activeUsers : eventsUsers[eventId].length
+              activeUsers : eventsUsers[eventId]
             })
             console.log("Number of users: "+eventsUsers[eventId].length);
             }

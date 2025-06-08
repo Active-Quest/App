@@ -108,6 +108,20 @@ button:hover {
     justify-content: space-between;
     align-items: center;
 }
+.event-name {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-name h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+}
 
 .event-header h3 {
     margin: 0;
