@@ -28,6 +28,9 @@ export const AuthProvider = ({ children }) => {
     window.location.reload();
   };
 
+  
+  
+
   return (
     <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
       {children}

@@ -1,13 +1,31 @@
 import React, {useState,useEffect, useCallback} from "react";
-import {Text, View, StyleSheet, Button, TouchableOpacity, ActivityIndicator} from "react-native";
+import {Text, View, StyleSheet, Button, TouchableOpacity, ActivityIndicator, Modal} from "react-native";
 import Activities from "../../src/activities";
+import CameraTrigger from "../../src/cameraTrigger";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Index(){
-   return(
-    <View style={styles.container}>
-        <Activities></Activities>
-    </View>
+    const [modalVisible, setModalVisible] = useState(false);
+    const [user,setUser] = useState(null);
     
+    useEffect(() => {
+    const getUser = async () => {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+        setUser(JSON.parse(userData));
+        }
+    };
+    getUser();
+    //console.log(user);
+    });
+
+   return(
+    <>
+        <CameraTrigger userId={user?.id} />
+        <View style={styles.container}>
+            <Activities></Activities>
+        </View>
+    </>
    );
 }
 

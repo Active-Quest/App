@@ -106,10 +106,10 @@ export default function Enable2FA({ visible, onClose, onImagePicked }) {
         const res = await fetch(`http://activequest.ddns.net:3002/users/${user.id}/update2FA`,{
             method:'POST',
             body:JSON.stringify({
-                boolean2FA:"True"
+                boolean2FA: true
             }),
             headers:{
-                "Content-Type":"Application/json"
+                "Content-Type":"application/json"
             }
         });
 
