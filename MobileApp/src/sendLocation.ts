@@ -1,10 +1,11 @@
 import * as Location from 'expo-location';
+import { Accelerometer } from 'expo-sensors';
 import { publishMessage } from './mqttClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function calculateDistance(coord1: { latitude: number, longitude: number }, coord2: { latitude: number, longitude: number }) {
   const toRad = (angle: number) => angle * Math.PI / 180;
-  const R = 6371e3; // Earth's radius in meters
+  const R = 6371e3; // meters
 
   const lat1 = toRad(coord1.latitude);
   const lat2 = toRad(coord2.latitude);
@@ -12,44 +13,39 @@ function calculateDistance(coord1: { latitude: number, longitude: number }, coor
   const dLon = toRad(coord2.longitude - coord1.longitude);
 
   const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) *
-    Math.sin(dLon / 2) ** 2;
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(dLon / 2) ** 2;
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
   return R * c;
 }
 
-export const avgSpeed = async (): Promise<number | undefined> => {
-  const prevCoordsStr = await AsyncStorage.getItem('prevCoord');
-  const prevTimeStr = await AsyncStorage.getItem('prevTimestamp');
+async function estimateSpeedFromAccelerometer(durationMs = 1000): Promise<number> {
+  return new Promise((resolve) => {
+    let speed = 0;
+    let prevTimestamp: number | null = null;
 
-  if (!prevCoordsStr || !prevTimeStr) return;
+    const subscription = Accelerometer.addListener(({ x, y, z }) => {
+      const currentTime = Date.now();
+      const acceleration = Math.sqrt(x * x + y * y + z * z) - 1;
 
-  const prevCoords = JSON.parse(prevCoordsStr);
-  const prevTime = parseInt(prevTimeStr);
-  const currentTime = Date.now();
+      if (prevTimestamp !== null) {
+        const deltaTime = (currentTime - prevTimestamp) / 1000; // in seconds
+        speed += acceleration * deltaTime;
+      }
 
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-  const coords = location.coords;
+      prevTimestamp = currentTime;
+    });
 
-  const distance = calculateDistance(coords, prevCoords); // in meters
-  const timeElapsedSeconds = (currentTime - prevTime) / 1000;
+    Accelerometer.setUpdateInterval(100); // 10 readings/sec
 
-  if (timeElapsedSeconds === 0) return;
-
-  const speedMs = distance / timeElapsedSeconds;
-  const speedKmh = speedMs * 3.6; // convert to km/h
-
-  // Update previous data
-  await AsyncStorage.setItem('prevCoord', JSON.stringify(coords));
-  await AsyncStorage.setItem('prevTimestamp', currentTime.toString());
-
-  return speedKmh;
-};
-
-
-
+    setTimeout(() => {
+      subscription.remove();
+      const speedKmh = Math.max(0, speed) * 3.6; // Convert from m/s to km/h
+      resolve(speedKmh);
+    }, durationMs);
+  });
+}
 
 export const sendLocation = async (userId: String, activityId: String, duration: string) => {
   const { status } = await Location.requestForegroundPermissionsAsync();
@@ -60,32 +56,34 @@ export const sendLocation = async (userId: String, activityId: String, duration:
 
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
   const coords = location.coords;
-  const prevCoords = await AsyncStorage.getItem('prevCoord');
-  let distance;
-  if (prevCoords) {
-    distance = calculateDistance(coords, JSON.parse(prevCoords));
-    await AsyncStorage.setItem('prevCoord', JSON.stringify(coords));
 
-  } else {//go in here if it's the first coordinate
-    await AsyncStorage.setItem('prevCoord', JSON.stringify(coords));
+  const prevCoordsStr = await AsyncStorage.getItem('prevCoord');
+  let distance: number | undefined;
+
+  if (prevCoordsStr) {
+    const prevCoords = JSON.parse(prevCoordsStr);
+    distance = calculateDistance(coords, prevCoords);
   }
 
-  const averageSpeed = await avgSpeed();
+  const averageSpeedKmh = await estimateSpeedFromAccelerometer();
 
-  //Date -> controller
   publishMessage('test/topic', JSON.stringify({
-    userId: userId,
-    activityId: activityId,
+    userId,
+    activityId,
     latitude: coords.latitude,
     longitude: coords.longitude,
     altitude: coords.altitude,
-    distance: distance,
-    averageSpeed: averageSpeed,
-    duration: duration
+    distance: distance ?? 0,
+    averageSpeed: averageSpeedKmh,
+    duration
   }));
 
-  let latitude = coords.latitude;
-  let longitude = coords.longitude;
-  //Return the location data for the map back on our App.tsx
-  return { latitude, longitude, distance, averageSpeed };
+  await AsyncStorage.setItem('prevCoord', JSON.stringify(coords));
+
+  return {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    distance,
+    averageSpeed: averageSpeedKmh
+  };
 };
