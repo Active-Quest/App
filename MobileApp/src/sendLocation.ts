@@ -47,7 +47,8 @@ async function estimateSpeedFromAccelerometer(durationMs = 1000): Promise<number
   });
 }
 
-export const sendLocation = async (userId: String, activityId: String, duration: string) => {
+
+export const sendLocation = async (userId : String, activityId : String, duration: string, eventId: string, finished: boolean) => {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
     console.warn('Location permission not granted');
@@ -75,7 +76,9 @@ export const sendLocation = async (userId: String, activityId: String, duration:
     altitude: coords.altitude,
     distance: distance ?? 0,
     averageSpeed: averageSpeedKmh,
-    duration
+    duration: duration,
+    eventId: eventId,
+    finished: finished
   }));
 
   await AsyncStorage.setItem('prevCoord', JSON.stringify(coords));
