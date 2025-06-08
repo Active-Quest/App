@@ -132,14 +132,14 @@ const Events = () => {
       )}
 
       {/* Event List */}
-      <div className="event-list">
+      {<div className="event-list">
         {events.map(event => (
           <div key={event._id} className="event-card">
             <div className="event-header">
               <h3>{event.title}</h3>
               <div className="event-users">
                 <FontAwesomeIcon icon={faUser} className="user-icon" />
-                <span className="user-count">{event.activeUsers}</span>
+                <span className="user-count">{event.activeUsers?.length ?? 0}</span>
               </div>
             </div>
             <p>Type: {event.type} | Goal: {event.goal} km</p>
@@ -150,7 +150,7 @@ const Events = () => {
             <p>{event.description}</p>
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
 };
