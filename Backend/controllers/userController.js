@@ -182,15 +182,15 @@ module.exports = {
             const { passed2FA } = req.body;
             const userId = req.params.id;
 
-            const user = await UserModel.findById(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            user.passed2FA = passed2FA;
-            user.waitingMobile2FA = false;
-
-            await user.save();
+            const result = await UserModel.updateOne(
+            { _id: userId },
+                {
+                    $set: {
+                        passed2FA: passed2FA,
+                        waitingMobile2FA: false
+                    }
+                }
+            );
             return res.status(200).json({ message: '2FA status updated' });
         } catch (err) {
             return res.status(500).json({ message: 'Failed to update 2FA', error: err.message });
