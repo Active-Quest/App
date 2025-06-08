@@ -354,7 +354,10 @@ find: async function (req, res) {
             user.twoFA = status2FA;
         
             try {
-                    const savedUser = await user.updateOne();
+                    await UserModel.updateOne(
+                      { _id: req.params.id },
+                      { $set: { twoFA: req.body.boolean2FA } }
+                    );
                     return res.status(201).json(savedUser);
                 } catch (err) {
                     return res.status(500).json({
