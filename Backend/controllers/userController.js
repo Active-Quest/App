@@ -123,16 +123,21 @@ module.exports = {
             }
 
             const isMatch = await bcrypt.compare(password, user.password);
-            console.log("🔍 Password match:", isMatch);
             if (!isMatch) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
             if(user.twoFA==true){
                 console.log("LOGIN HIt");
-                user.waitingMobile2FA = true;
-                user.passed2FA = false;
-                await user.save();
+                await UserModel.updateOne(
+                  { _id: user._id },
+                  {
+                    $set: {
+                      waitingMobile2FA: true,
+                      passed2FA: false
+                    }
+                  }
+                );
                return res.json({
                 twoFARequired: true,
                 userId: user._id,
