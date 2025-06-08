@@ -62,6 +62,17 @@ mqttClient.on('message', async (topic, message) => {
   
       if(!eventsUsers[eventId].includes(userId)){
         eventsUsers[eventId].push(userId);
+        try{
+          const event = await Event.findOne({_id : eventId});
+          if(event){
+            await event.updateOne({
+              activeUsers : eventsUsers[eventId].length
+            })
+            console.log("Number of users: "+eventsUsers[eventId].length);
+            }
+          } catch (err) {
+            console.error('Error failed to add userid to event:', err.message);
+          }
       }
 
       if(data.finished){
@@ -75,7 +86,7 @@ mqttClient.on('message', async (topic, message) => {
             console.log("Number of users: "+eventsUsers[eventId].length);
             }
           } catch (err) {
-            console.error('Error during interval update:', err.message);
+            console.error('Error failed to finish the activity:', err.message);
           }
       }
 
