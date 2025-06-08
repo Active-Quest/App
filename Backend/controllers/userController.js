@@ -115,6 +115,7 @@ module.exports = {
 
     login: async function (req, res, next) {
         try {
+            
             const { email, password } = req.body;
             const user = await UserModel.findOne({ email });
             if (!user) {
@@ -122,13 +123,15 @@ module.exports = {
             }
 
             const isMatch = await bcrypt.compare(password, user.password);
+            console.log("🔍 Password match:", isMatch);
             if (!isMatch) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
             if(user.twoFA==true){
+                console.log("LOGIN HIt");
                 user.waitingMobile2FA = true;
-
+                user.passed2FA = false;
                 await user.save();
                return res.json({
                 twoFARequired: true,
@@ -174,17 +177,24 @@ module.exports = {
       }
     },
 
-    update2FAResult: async function (req,res){
-        const {passed2FA} = req.body;
-        const userId = req.params.id;
-        const user = await UserModel.findById(userId);
-        if(!user){
-            return res.status(404).json({message: 'User not found'});
-        }
+    update2FAResult: async function (req, res) {
+        try {
+            const { passed2FA } = req.body;
+            const userId = req.params.id;
 
-        user.passed2FA = passed2FA;
-        user.waitingMobile2FA = false;
-        await user.save();
+            const user = await UserModel.findById(userId);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            user.passed2FA = passed2FA;
+            user.waitingMobile2FA = false;
+
+            await user.save();
+            return res.status(200).json({ message: '2FA status updated' });
+        } catch (err) {
+            return res.status(500).json({ message: 'Failed to update 2FA', error: err.message });
+        }
     },
 
 
@@ -344,7 +354,7 @@ find: async function (req, res) {
             user.twoFA = status2FA;
         
             try {
-                    const savedUser = await user.save();
+                    const savedUser = await user.updateOne();
                     return res.status(201).json(savedUser);
                 } catch (err) {
                     return res.status(500).json({
