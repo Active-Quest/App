@@ -95,22 +95,31 @@ const MenuModal = ({ onClose }) => {
         }
     };
 
-    const poll2FAStatus = (userId) => {
-        const intervalId = setInterval(async () => {
-            try {
-            const res = await fetch(`${API_URL}/users/check2FAStatus/${userId}`);
-            const data = await res.json();
-
-            if (data.passed2FA) {
-                clearInterval(intervalId);
-                localStorage.setItem("token", data.token);
-                alert("2FA verified! Logging you in...");
-                setUser(prevUser => ({ ...prevUser, twoFA: true }));
+   const poll2FAStatus = (userId) => {
+      const intervalId = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_URL}/users/check2FAStatus/${userId}`);
+          const data = await res.json();
+    
+          if (data.passed2FA && data.token) {
+            clearInterval(intervalId);
+            localStorage.setItem("token", data.token);
+            alert("2FA verified! Logging you in...");
+    
+            //fetch the user profile using new token
+            const profileRes = await fetch(`${API_URL}/users/me`, {
+              headers: { Authorization: `Bearer ${data.token}` },
+            });
+            if (profileRes.ok) {
+              const userData = await profileRes.json();
+              setUser(userData);
+              localStorage.setItem("user", JSON.stringify(userData));
             }
-            } catch (error) {
-            console.error("Error polling 2FA status:", error);
-            }
-        }, 5000);
+          }
+        } catch (error) {
+          console.error("Error polling 2FA status:", error);
+        }
+      }, 5000);
     };
 
     const handleRegister = async e => {
