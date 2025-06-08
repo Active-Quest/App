@@ -16,8 +16,8 @@ export default function Index(){
         }
     };
     getUser();
-    console.log(user);
-    }, []);
+    //console.log(user);
+    });
 
    return(
     <>

@@ -90,7 +90,7 @@ export default function App() {
       }));
       setEvents(dropdownItems);
     });
-  });
+  },[]);
 
   const makeActivityId = async () => {
     if (!user) {

@@ -73,11 +73,16 @@ export default function CameraTrigger({ userId }) {
       const data = await res.json();
       setIsUploading(false);
 
-      if (data.verified === 'true') {
+      if (data.verified === true) {
+        console.log(user.id);
+        const res = await fetch(`http://activequest.ddns.net:3002/users/${user.id}/update2FAResult`,{
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json'
+          },
+          body:JSON.stringify({passed2FA:true}),
+        });
         Alert.alert('2FA completed successfully!');
-        //passed2FA = true API CALL
-        
-        
       } else {
         Alert.alert('Not a match!');
       }
