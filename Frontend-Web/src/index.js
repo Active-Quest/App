@@ -7,7 +7,6 @@ import './icons';
 import 'leaflet/dist/leaflet.css';
 
 
-
 // Read the saved theme (default to 'green')
 const savedTheme = localStorage.getItem('theme') || 'green';
 Array.from(document.body.classList).forEach(cls => {

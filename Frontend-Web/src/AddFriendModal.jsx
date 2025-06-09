@@ -44,51 +44,52 @@ const AddFriendModal = ({ onClose }) => {
     }
   };
 
-    return (
+    const isLoggedIn = !!JSON.parse(localStorage.getItem("user"));
+
+    return isLoggedIn ?(
         <>
-            <div className="overlay" onClick={onClose} />
-      <div className="modal add-friend-modal">
-        <h3>Find and Add Friends</h3>
-        <form onSubmit={handleSearch} className="auth-form">
-          <input
-            type="text"
-            placeholder="First Name"
-            value={firstName}
-            onChange={e => setFirst(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            value={lastName}
-            onChange={e => setLast(e.target.value)}
-          />
-          <button type="submit">Search</button>
-        </form>
+          <div className="overlay" onClick={onClose} />
+            <div className="modal add-friend-modal">
+              <h3>Find and Add Friends</h3>
+              <form onSubmit={handleSearch} className="auth-form">
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={firstName}
+                  onChange={e => setFirst(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={lastName}
+                  onChange={e => setLast(e.target.value)}
+                />
+                <button type="submit">Search</button>
+              </form>
 
-        {results.length > 0 ? (
-            <div className="search-results">
-                {results
-                    .filter(user => user._id !== userId)
-                    .map(user => (
-                        <div key={user._id} className="result-card">
-                        <span>{user.firstName} {user.lastName} ({user.email})</span>
-                        <FontAwesomeIcon
-                            icon={faPlus}
-                            className="add-icon"
-                            onClick={() => handleAddFriend(user._id)}
-                        />
-                        </div>
-                    ))}
-            </div>
-        ) : (
-          <p className="text-center">No users found.</p>
-        )}
+              {results.length > 0 ? (
+                  <div className="search-results">
+                      {results
+                          .filter(user => user._id !== userId)
+                          .map(user => (
+                              <div key={user._id} className="result-card">
+                              <span>{user.firstName} {user.lastName} ({user.email})</span>
+                              <FontAwesomeIcon
+                                  icon={faPlus}
+                                  className="add-icon"
+                                  onClick={() => handleAddFriend(user._id)}
+                              />
+                              </div>
+                          ))}
+                  </div>
+              ) : (
+                <p className="text-center">No users found.</p>
+              )}
 
-        <button className="close-btn" onClick={onClose}>Close</button>
-      </div>
-
+            <button className="close-btn" onClick={onClose}>Close</button>
+          </div>
         </>
-    );
+    ): null;
 };
 
 export default AddFriendModal;
