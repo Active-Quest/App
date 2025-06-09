@@ -66,7 +66,7 @@ mqttClient.on('message', async (topic, message) => {
           const event = await Event.findOne({_id : eventId});
           if(event){
             await event.updateOne({
-              activeUsers : eventsUsers[eventId].length
+              activeUsers : eventsUsers[eventId]
             })
             console.log("Number of users: "+eventsUsers[eventId].length);
             }
@@ -81,7 +81,7 @@ mqttClient.on('message', async (topic, message) => {
           const event = await Event.findOne({_id : eventId});
           if(event){
             await event.updateOne({
-              activeUsers : eventsUsers[eventId].length
+              activeUsers : eventsUsers[eventId]
             })
             console.log("Number of users: "+eventsUsers[eventId].length);
             }
@@ -102,7 +102,7 @@ mqttClient.on('message', async (topic, message) => {
       if (existing) {
         existing.waypoints.push(waypoint);
         await existing.updateOne({
-          $push: { waypoints: waypoint },
+          $push: { waypoints: waypoint, avgSpeed: data.averageSpeed },
           $inc: { distance: data.distance }, //increment the new distance to the total
           duration: data.duration
         });
@@ -117,7 +117,7 @@ mqttClient.on('message', async (topic, message) => {
           duration: '0:01',
           distance: '0.00',
           waypoints: [waypoint],
-          avgSpeed: 0
+          avgSpeed: [data.averageSpeed ?? 0]
          
         });
 

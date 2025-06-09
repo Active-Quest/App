@@ -30,11 +30,11 @@ export default function ActivityCard({ activity }) {
     ? activity.waypoints.map(wp => [wp.lat, wp.lon])
     : [];
 
-  const graphData = activity?.waypoints?.map((wp, index) => ({
+  const graphData = (activity?.avgSpeed || []).map((s, index) => ({
     index,
-    speed: parseFloat(wp.speed || 0),
-    alt: parseFloat(wp.alt || 0),
-  })) || [];
+    speed: parseFloat(s.toFixed(3)),
+    alt: parseFloat(activity.waypoints?.[index]?.alt ?? 0)
+  }));
 
   const startIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
@@ -49,6 +49,10 @@ export default function ActivityCard({ activity }) {
     iconSize: [15, 21],
     shadowSize: [41, 41]
   });
+
+  const averageSpeed = Array.isArray(activity.avgSpeed) && activity.avgSpeed.length > 0
+    ? (activity.avgSpeed.reduce((a, b) => a + b, 0) / activity.avgSpeed.length).toFixed(3)
+    : 'N/A';
 
   return (
     <div className="activity-card-container">
@@ -73,7 +77,7 @@ export default function ActivityCard({ activity }) {
           </div>
           <div className="table-row">
             <div className="cell">Avg Speed</div>
-            <div className="cell">{activity.avgSpeed ?? 'N/A'} km/h</div>
+            <div className="cell">{averageSpeed} km/h</div>
           </div>
         </div>
 
@@ -110,8 +114,8 @@ export default function ActivityCard({ activity }) {
                   <LineChart data={graphData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="index" />
-                    <YAxis unit=" km/h" />
-                    <Tooltip />
+                    <YAxis unit="km/h" />
+                    <Tooltip formatter={(value) => `${parseFloat(value).toFixed(2)}`} />
                     <Line type="monotone" dataKey="speed" stroke="#3DA35D" strokeWidth={3} dot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -122,8 +126,8 @@ export default function ActivityCard({ activity }) {
                   <LineChart data={graphData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="index" />
-                    <YAxis unit=" m" />
-                    <Tooltip />
+                    <YAxis unit="m" />
+                    <Tooltip formatter={(value) => `${parseFloat(value).toFixed(2)}`} />
                     <Line type="monotone" dataKey="alt" stroke="#96E072" strokeWidth={3} dot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
