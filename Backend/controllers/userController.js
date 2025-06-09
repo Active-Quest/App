@@ -315,7 +315,6 @@ find: async function (req, res) {
             const userId = req.params.id;
             const friendId = req.body.friendId;
 
-
             if (!friendId) {
             return res.status(400).json({ message: 'friendId is required in body' });
             }
@@ -324,12 +323,16 @@ find: async function (req, res) {
             if (!user) {
             return res.status(404).json({ message: 'User not found' });
             }
-
-            if (!user.friends.includes(friendId)) {
-            user.friends.push(friendId);
+            let friendsT = user.friends;
+            if (!friendsT.includes(friendId)) {
+            friendsT.push(friendId);
             }
 
-            const savedUser = await user.save();
+            const savedUser = await user.updateOne( { _id: userId },   {
+                    $set: {
+                        friends: friendsT,
+                    }
+                });
             return res.status(201).json(savedUser);
         } catch (err) {
             console.error("==> ADD FRIEND ERROR", err);
