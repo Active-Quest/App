@@ -1,8 +1,11 @@
 FROM python:3.10
 
 RUN apt-get update && \
-    apt-get install -y libgl1 libglx-mesa0 && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y \
+        libgl1 \
+        libglx-mesa0 \
+        mpich \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
