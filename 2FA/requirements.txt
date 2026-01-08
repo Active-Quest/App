@@ -7,3 +7,4 @@ scikit-learn
 opencv-python
 pillow
 flask
+mpi4py==4.1.1
