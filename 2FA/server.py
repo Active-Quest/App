@@ -11,7 +11,7 @@ app = Flask("Pyserver")
 
 @app.route("/register", methods=["POST"])
 def register():
-    print("Start of register..\n")
+    print("Start of register..\n", flush=True)
     if size < 2:
         return jsonify({"error":"No MPI workers available"}),500
     
@@ -74,9 +74,12 @@ if __name__ == "__main__":
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
+
+    print(f"Rank: {rank}\n Size: {size}")
     
     if rank == 0:
         app.run(host="0.0.0.0", port=3737,debug=False,use_reloader=False)
+        print(request)
     else:
         worker_loop(comm,rank)
     
