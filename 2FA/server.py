@@ -1,85 +1,124 @@
-from flask import Flask,request,jsonify
+from flask import Flask, request, jsonify
 import os
-import numpy as np
+import uuid
 from mpi4py import MPI
-from queue import Queue
 
-from register_user import register_user_logic 
+from register_user import register_user_logic
 from verify_user import verify_user_logic
 
 app = Flask("Pyserver")
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
+print(f"[MPI] Rank {rank} of {size}", flush=True)
+
+#SAMO MASTER
 @app.route("/register", methods=["POST"])
 def register():
-    print("Start of register..\n",flush=True)
+    print("[MASTER] Start register", flush=True)
+
     if size < 2:
-        return jsonify({"error":"No MPI workers available"}),500
-    
+        return jsonify({"error": "No MPI workers available"}), 500
+
     user_id = request.form["userId"]
     files = request.files.getlist("images")
 
-    #posljem slike 
+    num_tasks = len(files)
+    if num_tasks == 0:
+        return jsonify({"error": "No images provided"}), 400
+
+    #RAZDELI TASK
     for i, file in enumerate(files):
-        print("Sending image to slave\n")
         img_bytes = file.read()
-        comm.send({
-            "cmd": "PROCESS",
-            "user_id": user_id,
-            "image": img_bytes
-        }, dest=(i % (size-1)) + 1)
 
+        dest_rank = (i % (size - 1)) + 1 
+        print(f"[MASTER] Sending task {i} to worker {dest_rank}", flush=True)
+
+        comm.send(
+            {
+                "cmd": "PROCESS",
+                "user_id": user_id,
+                "image": img_bytes,
+            },
+            dest=dest_rank,
+        )
+
+    #REZULTATI
     results = []
-    for _ in files:
-        results.append(comm.recv())
+    for _ in range(num_tasks):
+        result = comm.recv(source=MPI.ANY_SOURCE)
+        print(f"[MASTER] Got result from worker", flush=True)
+        results.append(result)
 
-    return jsonify({"status": "ok"})
+    success = all(r["success"] for r in results)
+
+    return jsonify({
+        "status": "ok" if success else "error",
+        "processed": len(results)
+    })
 
 
 @app.route("/verify", methods=["POST"])
 def verify():
-    file = request.files["image"]#dobi sliko
-    path = "temp_verify.jpg"
+    file = request.files["image"]
+    path = f"/tmp/verify_{uuid.uuid4().hex}.jpg"
     file.save(path)
 
     matched_user = verify_user_logic(path)
     os.remove(path)
 
-    if(matched_user):
-        return jsonify({"verified":True,"user":matched_user})
-    return jsonify({"verified":False})
+    if matched_user:
+        return jsonify({"verified": True, "user": matched_user})
 
-def worker_loop(comm, rank):
-    print("Starting worker loop\n")
+    return jsonify({"verified": False})
+
+
+#WORKER 
+def worker_loop():
+    print(f"[WORKER {rank}] Started", flush=True)
+
     while True:
         task = comm.recv(source=0)
 
         if task["cmd"] == "STOP":
+            print(f"[WORKER {rank}] Stopping", flush=True)
             break
 
         user_id = task["user_id"]
         img_bytes = task["image"]
 
-        path = f"/tmp/{rank}.jpg"
-        with open(path, "wb") as f:
+        # unique temp file
+        img_path = f"/tmp/{user_id}_{rank}_{uuid.uuid4().hex}.jpg"
+        with open(img_path, "wb") as f:
             f.write(img_bytes)
 
-        embedding = register_user_logic(user_id, [path])
+        print(f"[WORKER {rank}] Processing image", flush=True)
 
-        comm.send({
-            "user_id": user_id,
-            "embedding": embedding
-        }, dest=0)
+        try:
+            success = register_user_logic(user_id, [img_path])
+        except Exception as e:
+            print(f"[WORKER {rank}] ERROR: {e}", flush=True)
+            success = False
+
+        os.remove(img_path)
+
+        comm.send(
+            {
+                "user_id": user_id,
+                "success": success
+            },
+            dest=0,
+        )
 
 if __name__ == "__main__":
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
-    print(f"Rank: {rank}\n Size: {size}")
-    
     if rank == 0:
-        app.run(host="0.0.0.0", port=3737,debug=False,use_reloader=False)
-        print(request)
+        app.run(
+            host="0.0.0.0",
+            port=3737,
+            debug=False,
+            use_reloader=False,
+            threaded=True,  #POMEMBNO
+        )
     else:
-        worker_loop(comm,rank)
-    
+        worker_loop()
