@@ -328,12 +328,9 @@ find: async function (req, res) {
             friendsT.push(friendId);
             }
 
-            const savedUser = await user.updateOne( { _id: userId },   {
-                    $set: {
-                        friends: friendsT,
-                    }
-                });
-            return res.status(201).json(savedUser);
+            const savedUser = await user.save(); 
+            
+            return res.status(200).json(savedUser);
         } catch (err) {
             console.error("==> ADD FRIEND ERROR", err);
             return res.status(500).json({ message: 'Error updating friends list', error: err.message });

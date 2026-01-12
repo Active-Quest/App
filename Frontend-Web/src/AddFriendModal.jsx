@@ -18,6 +18,25 @@ const AddFriendModal = ({ onClose }) => {
      const [firstName, setFirst] = useState("");
   const [lastName, setLast] = useState("");
   const [results, setResults] = useState([]);
+  const [currentFriends, setCurrentFriends] = useState([]);
+
+  useEffect(() => {
+        const fetchCurrentFriends = async () => {
+            if (!userId) return;
+
+            try {
+                const res = await axios.get(`${API_URL}/users/${userId}/friends`);
+                
+                const friendIds = res.data.map(friend => friend._id); 
+                setCurrentFriends(friendIds);
+
+            } catch (err) {
+                console.error("Error fetching current friends:", err.response?.data || err.message);
+            }
+        };
+
+        fetchCurrentFriends();
+    }, []); 
 
     const handleSearch = async (e) => {
     e.preventDefault();
@@ -39,12 +58,17 @@ const AddFriendModal = ({ onClose }) => {
         friendId: targetUserId
       });
       console.log("Friend added:", response.data);
+      setCurrentFriends(prevFriends => [...prevFriends, targetUserId]);
     } catch (err) {
       console.error("Failed to add friend:", err.response?.data || err.message);
     }
   };
 
     const isLoggedIn = !!JSON.parse(localStorage.getItem("user"));
+
+    const filteredResults = results
+        .filter(user => user._id !== userId) // Filter out self
+        .filter(user => !currentFriends.includes(user._id)); // Filter out current friends
 
     return isLoggedIn ?(
         <>
@@ -67,20 +91,18 @@ const AddFriendModal = ({ onClose }) => {
                 <button type="submit">Search</button>
               </form>
 
-              {results.length > 0 ? (
+              {filteredResults.length > 0 ? (
                   <div className="search-results">
-                      {results
-                          .filter(user => user._id !== userId)
-                          .map(user => (
-                              <div key={user._id} className="result-card">
-                              <span>{user.firstName} {user.lastName} ({user.email})</span>
-                              <FontAwesomeIcon
-                                  icon={faPlus}
-                                  className="add-icon"
-                                  onClick={() => handleAddFriend(user._id)}
-                              />
-                              </div>
-                          ))}
+                      {filteredResults.map(user => (
+                            <div key={user._id} className="result-card">
+                                <span>{user.firstName} {user.lastName} ({user.email})</span>
+                                <FontAwesomeIcon
+                                    icon={faPlus}
+                                    className="add-icon"
+                                    onClick={() => handleAddFriend(user._id)}
+                                />
+                            </div>
+                        ))}
                   </div>
               ) : (
                 <p className="text-center">No users found.</p>
