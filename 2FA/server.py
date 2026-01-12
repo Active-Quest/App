@@ -26,6 +26,8 @@ def register():
     if not files:
         files = request.files.getlist("images[]")
 
+    print("FILES COUNT:", len(files), flush=True)
+
     num_tasks = len(files)
     if num_tasks == 0:
         return jsonify({"error": "No images provided"}), 400
