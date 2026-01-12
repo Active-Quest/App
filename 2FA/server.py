@@ -1,19 +1,12 @@
-from flask import Flask,request,jsonify,Response
+from flask import Flask,request,jsonify
 import os
 import numpy as np
 from mpi4py import MPI
 from queue import Queue
-import sys
 
-from augmentImages import processAllImages
 from register_user import register_user_logic 
 from verify_user import verify_user_logic
 
-LOG_FILE = "/tmp/server.log"
-
-
-sys.stdout = open(LOG_FILE,"a",buffering=1)
-sys.stderr = open(LOG_FILE,"a",buffering=1)
 app = Flask("Pyserver")
 
 @app.route("/register", methods=["POST"])
@@ -37,12 +30,9 @@ def register():
 
     results = []
     for _ in files:
-        results.append(comm.recv(source=MPI.ANY_SOURCE))
-    status = "error"
-    if results[0]["success"] == True:
-        status = "ok"
-        
-    return jsonify({"status": status})
+        results.append(comm.recv())
+
+    return jsonify({"status": "ok"})
 
 
 @app.route("/verify", methods=["POST"])
@@ -59,8 +49,7 @@ def verify():
     return jsonify({"verified":False})
 
 def worker_loop(comm, rank):
-    print(f"Worker {rank} started", flush=True)
-
+    print("Starting worker loop\n")
     while True:
         task = comm.recv(source=0)
 
@@ -70,47 +59,16 @@ def worker_loop(comm, rank):
         user_id = task["user_id"]
         img_bytes = task["image"]
 
-        #Unique image TEMPORARY!
-        img_path = f"/tmp/{user_id}_{rank}.jpg"
-        with open(img_path, "wb") as f:
+        path = f"/tmp/{rank}.jpg"
+        with open(path, "wb") as f:
             f.write(img_bytes)
 
-        success = register_user_logic(user_id, [img_path])
+        embedding = register_user_logic(user_id, [path])
 
-        #TEMPORARY FOLDER
-        embedding_dir = f"embeddings/worker_{rank}"
-        os.makedirs(embedding_dir, exist_ok=True)
-
-        embedding_files = [
-            f for f in os.listdir(embedding_dir)
-            if f.startswith(user_id) and f.endswith(".npy")
-        ]
-
-        embeddings = []
-
-        for fname in embedding_files:
-            emb_path = os.path.join(embedding_dir, fname)
-            embeddings.append(np.load(emb_path))
-            os.remove(emb_path)
-
-        #clean up after working
-        os.remove(img_path)
-
-        #send back to server (master)
         comm.send({
             "user_id": user_id,
-            "success": success,
-            "embeddings": embeddings
+            "embedding": embedding
         }, dest=0)
-
-@app.route("/logs", methods=["GET"])
-def show_logs():
-    try:
-        with open("/tmp/server.log","r") as f:
-            content = f.read()
-            return Response(content,mimetype = "text/plain")
-    except FileNotFoundError:
-        return "Log file not found", 404
 
 if __name__ == "__main__":
     comm = MPI.COMM_WORLD
