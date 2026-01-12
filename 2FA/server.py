@@ -12,7 +12,7 @@ app = Flask("Pyserver")
 
 @app.route("/register", methods=["POST"])
 def register():
-    print("Start of register..\n", flush=True)
+    print("Start of register..\n",flush=True)
     if size < 2:
         return jsonify({"error":"No MPI workers available"}),500
     
