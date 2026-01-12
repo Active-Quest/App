@@ -53,7 +53,7 @@ def register_user_logic(user_id, img_paths):
             print(f"Saved: {filename}")
             counter += 1
 
-    if counter > 10:
+    if counter > 3:
         return True
     else:
         return False
