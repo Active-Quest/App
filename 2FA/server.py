@@ -1,13 +1,19 @@
-from flask import Flask,request,jsonify
+from flask import Flask,request,jsonify,Response
 import os
 import numpy as np
 from mpi4py import MPI
 from queue import Queue
+import sys
 
 from augmentImages import processAllImages
 from register_user import register_user_logic 
 from verify_user import verify_user_logic
 
+LOG_FILE = "/tmp/server.log"
+
+
+sys.stdout = open(LOG_FILE,"a",buffering=1)
+sys.stderr = open(LOG_FILE,"a",buffering=1)
 app = Flask("Pyserver")
 
 @app.route("/register", methods=["POST"])
@@ -94,6 +100,14 @@ def worker_loop(comm, rank):
             "embeddings": embeddings
         }, dest=0)
 
+@app.route("/logs", methods=["GET"])
+def show_logs():
+    try:
+        with open("/tmp/server.log","r") as f:
+            content = f.read()
+            return Response(content,mimetype = "text/plain")
+    except FileNotFoundError:
+        return "Log file not found", 404
 
 if __name__ == "__main__":
     comm = MPI.COMM_WORLD

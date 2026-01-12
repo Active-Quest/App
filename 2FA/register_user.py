@@ -7,9 +7,8 @@ from tensorflow.keras.models import load_model
 from libs import libs
 import cv2
 
-# Parameters
-
 IMAGE_SIZE = (224, 224)
+
 def register_user_logic(user_id, img_paths):
 
     # Load model
