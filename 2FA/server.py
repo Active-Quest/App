@@ -13,7 +13,7 @@ size = comm.Get_size()
 
 print(f"[MPI] Rank {rank} of {size}", flush=True)
 
-#SAMO MASTER
+#SAMO MASTER (rank 0)
 @app.route("/register", methods=["POST"])
 def register():
     print("[MASTER] Start register", flush=True)
