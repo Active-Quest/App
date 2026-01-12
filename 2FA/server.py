@@ -38,8 +38,11 @@ def register():
     results = []
     for _ in files:
         results.append(comm.recv(source=MPI.ANY_SOURCE))
-
-    return jsonify({"status": results[0]["success"]})
+    status = "error"
+    if results[0]["success"] == True:
+        status = "ok"
+        
+    return jsonify({"status": status})
 
 
 @app.route("/verify", methods=["POST"])
