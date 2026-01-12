@@ -23,6 +23,8 @@ def register():
 
     user_id = request.form["userId"]
     files = request.files.getlist("images")
+    if not files:
+        files = request.files.getlist("images[]")
 
     num_tasks = len(files)
     if num_tasks == 0:
