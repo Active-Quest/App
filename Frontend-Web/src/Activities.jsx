@@ -1,0 +1,27 @@
+import { useEffect, useState } from 'react';
+import ActivityCard from './ActivityCard';
+
+function Activities() {
+  const [activities, setActivities] = useState([]);
+
+  //const API_URL = process.env.REACT_APP_API_URL || "http://activequest.ddns.net:3002";
+  const API_URL = 'http://activequest.ddns.net:3002';
+  //const API_URL = 'http://localhost:3002';
+
+
+  useEffect(() => {
+    fetch(`${API_URL}/activities`)
+      .then(res => res.json())
+      .then(setActivities);
+  }, []);
+
+  return (
+    <div className="activities-container">
+      {activities.map(activity => (
+        <ActivityCard key={activity._id} activity={activity} />
+      ))}
+    </div>
+  );
+}
+
+export default Activities;

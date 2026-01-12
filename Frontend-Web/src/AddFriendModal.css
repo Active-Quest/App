@@ -1,0 +1,23 @@
+.add-friend-modal {
+  width: 400px;
+  padding: 20px;
+}
+
+.result-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eee;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.add-icon {
+  cursor: pointer;
+  color: green;
+}
+
+.close-btn {
+  margin-top: 5px;
+}

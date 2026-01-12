@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend&display=swap');
+
+html, body {
+    margin: 0;
+    padding: 0;
+  }
+  
+:root {
+    --color-text:      #134611; /* body & headings */
+    --color-muted:     #3E8914; /* secondary text, borders */
+    --color-primary:   #3DA35D; /* CTA buttons, links */
+    --color-accent:    #96E072; /* hover, highlights */
+    --color-surface:   #E8FCCF; /* cards, modals */
+}
+  
+/* Blue theme (dot #1) */
+.theme-blue {
+    --color-text:      #0D1B2A;
+    --color-muted:     #1B263B;
+    --color-primary:   #415A77;
+    --color-accent:    #778DA9;
+    --color-surface:   #E0E1DD;
+ }
+  
+/* Yellow theme (dot #2) */
+.theme-yellow {
+    --color-text:      #FDB833;
+    --color-muted:     #FDC43F;
+    --color-primary:   #FFDA3D;
+    --color-accent:    #FFE94E;
+    --color-surface:   #fef99f;
+}
+  
+/* Red theme (dot #3) */
+.theme-red {
+    --color-text:      #250902;
+    --color-muted:     #38040E;
+    --color-primary:   #640D14;
+    --color-accent:    #800E13;
+    --color-surface:   #a75258;
+}
+  
+/* Purple theme (dot #4) */
+.theme-purple {
+    --color-text:      #9667E0;
+    --color-muted:     #D4BBFC;
+    --color-primary:   #EBD9FC;
+    --color-accent:    #F2EBFB;
+    --color-surface:   #FBFAFF;
+}
+  
+/* Orange theme (dot #5) */
+.theme-orange {
+    --color-text:      #CC5803;
+    --color-muted:     #E2711D;
+    --color-primary:   #FF9505;
+    --color-accent:    #FFB627;
+    --color-surface:   #FFC971;
+}
+  
+/* Green theme (dot #6) – same as default */
+.theme-green {
+    --color-text:      #134611; 
+    --color-muted:     #3E8914; 
+    --color-primary:   #3DA35D; 
+    --color-accent:    #96E072; 
+    --color-surface:   #E8FCCF; 
+}
+body {
+  font-family: 'Lexend', sans-serif;
+}
+

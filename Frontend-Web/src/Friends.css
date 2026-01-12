@@ -1,0 +1,152 @@
+.event-form {
+  max-width: 800px;  
+  margin: 0 auto 30px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 20px;
+}
+
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.full-width {
+    grid-column: span 3;
+}
+
+.text-center {
+    margin-top: 30px;
+    text-align: center;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--color-text);
+}
+
+input, select, textarea {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid var(--color-muted);
+    border-radius: 4px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+button {
+    padding: 10px;
+    font-size: 18px;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: var(--color-accent);
+}
+
+.events-page {
+    padding: 20px;
+    max-width: 900px;
+    margin: auto;
+}
+
+.toggle-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-primary);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 15px;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-box:hover {
+    background-color: var(--color-accent);
+}
+
+.arrow {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.arrow.up {
+    transform: rotate(180deg);
+}
+
+/* Card Styling */
+.event-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-muted);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Colored Header for Card */
+.event-header {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.event-name {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-name h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.event-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.event-users {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.user-icon {
+    color: white;
+    font-size: 18px;
+}
+
+.user-count {
+    font-weight: bold;
+    color: white;
+}
+
+/* Card body text */
+.event-card p {
+    margin: 8px 16px;
+    color: var(--color-text);
+}
