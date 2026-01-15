@@ -84,10 +84,9 @@ def DeIC(bitstream, C, L, H):
             if L < m: DeIC(bitstream, C, L, m)
             if m < H: DeIC(bitstream, C, m, H)
 
-# --- Glava datoteke zdaj vključuje število kanalov ---
 def set_header(H, W, channels, C0_list, Cn_1_list, pad):
     header = b'FLoCIC'
-    header += struct.pack('<HHB', H, W, channels) # Višina, Širina, Kanali
+    header += struct.pack('<HHB', H, W, channels) #Visina, sirina, kanali
     for i in range(channels):
         header += struct.pack('<II', int(C0_list[i]), int(Cn_1_list[i]))
     header += struct.pack('<B', pad)
@@ -108,7 +107,7 @@ def decode_header(data):
 
 def compress_flocic(input_path, output_fcic):
     start_time = time.time()
-    img = cv2.imread(input_path) # Prebere v BGR formatu
+    img = cv2.imread(input_path) #BGR!
     if img is None: raise FileNotFoundError(f"Ni mogoče naložiti {input_path}")
     
     H, W, channels = img.shape
@@ -179,6 +178,7 @@ def decompress_flocic(input_fcic, output_bmp):
     cv2.imwrite(output_bmp, final_img)
     print(f"Odstisnjeno: {output_bmp}")
 
+#========= TOTI DEL SE IGNORIRA PRI NASI IMPLEMENTACIJI=========#
 if __name__ == "__main__":
     INPUT = "slika.png" 
     COMPRESSED = "slika.fcic"
