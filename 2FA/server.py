@@ -61,14 +61,14 @@ def register():
         compress_flocic(img_path,compressed_img_path)
         original_img_size = os.path.getsize(img_path)
         compressed_img_size = os.path.getsize(compressed_img_path)
-        print(f"[{user_id}_{i}.fcic] - {compressed_img_size}\n [ORIGINAL] - {img_path}")
+        print(f"[{user_id}_{i}.fcic] - {compressed_img_size}\n [ORIGINAL] - {original_img_size}")
 
     
         comm.send(
             {
                 "cmd": "PROCESS",
                 "user_id": user_id,
-                "compressed_image_path": compressed_img_path,
+                "compressed_image_path": compressed_img_path
             },
             dest=dest_rank,
         )
@@ -115,7 +115,7 @@ def worker_loop():
             break
 
         user_id = task["user_id"]
-        compressed_img_path = task["compressed_img_path"]
+        compressed_img_path = task["compressed_image_path"]
 
         #unique temp file
         #img_path = f"/tmp/{user_id}_{rank}_{uuid.uuid4().hex}.jpg"
