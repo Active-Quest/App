@@ -19,11 +19,19 @@ size = comm.Get_size()
 
 print(f"[MPI] Rank {rank} of {size}", flush=True)
 
+
+def ensure_dirs():
+    dirs = ["/tmp/compressed", "/tmp/decompressed"]
+    for d in dirs:
+        if not os.path.exists(d):
+            os.makedirs(d, exist_ok=True)
+            print(f"[SYSTEM] Created directory: {d}", flush=True)
+
 #SAMO MASTER (rank 0)
 @app.route("/register", methods=["POST"])
 def register():
     print("[MASTER] Start register", flush=True)
-
+    ensure_dirs()
     if size < 2:
         return jsonify({"error": "No MPI workers available"}), 500
 
@@ -98,7 +106,7 @@ def verify():
 #WORKER 
 def worker_loop():
     print(f"[WORKER {rank}] Started", flush=True)
-
+    ensure_dirs()
     while True:
         task = comm.recv(source=0)
 
