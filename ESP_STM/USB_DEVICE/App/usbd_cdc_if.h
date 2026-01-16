@@ -31,7 +31,9 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+ extern uint8_t cmd_ready;
+ extern uint8_t cmd_len;
+ extern uint8_t cmd_buffer[64];
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY

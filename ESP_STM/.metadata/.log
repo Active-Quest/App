@@ -1,0 +1,58 @@
+!SESSION 2026-01-16 13:28:08.820 -----------------------------------------------
+eclipse.buildId=Version 1.19.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_SI
+Framework arguments:  -keyring /Users/andrazvz/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -keyring /Users/andrazvz/.eclipse_keyring
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2026-01-16 13:28:29.439
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-01-16 13:28:29.441
+!MESSAGE Log4j2 initialized with config file /Users/andrazvz/Documents/FERI/projekt/ActiveQuest/ESP_STM/.metadata/.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-01-16 13:28:34.052
+!MESSAGE Started RMI Server, listening on port 41337
+!SESSION 2026-01-16 13:29:09.605 -----------------------------------------------
+eclipse.buildId=Version 1.19.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_SI
+Framework arguments:  -keyring /Users/andrazvz/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -keyring /Users/andrazvz/.eclipse_keyring
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-01-16 13:29:21.684
+!MESSAGE Log4j2 initialized with config file /Users/andrazvz/Documents/FERI/projekt/ActiveQuest/ESP_STM/.metadata/.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-01-16 13:29:26.469
+!MESSAGE Started RMI Server, listening on port 41337
+!SESSION 2026-01-16 13:38:48.711 -----------------------------------------------
+eclipse.buildId=Version 1.19.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_SI
+Framework arguments:  -keyring /Users/andrazvz/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -keyring /Users/andrazvz/.eclipse_keyring
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-01-16 13:44:26.642
+!MESSAGE Log4j2 initialized with config file /Users/andrazvz/Documents/FERI/projekt/ActiveQuest/ESP_STM/.metadata/.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-01-16 13:44:31.451
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.cdt.core 1 0 2026-01-16 13:45:59.985
+!MESSAGE Indexed 'board' (34 sources, 101 headers) in 8.69 sec: 7,591 declarations; 48,300 references; 0 unresolved inclusions; 1 syntax errors; 2 unresolved names (0.0036%)
+!SESSION 2026-01-16 13:50:10.668 -----------------------------------------------
+eclipse.buildId=Version 1.19.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_SI
+Framework arguments:  -keyring /Users/andrazvz/.eclipse_keyring
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -keyring /Users/andrazvz/.eclipse_keyring
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-01-16 13:50:42.713
+!MESSAGE Log4j2 initialized with config file /Users/andrazvz/Documents/FERI/projekt/ActiveQuest/ESP_STM/.metadata/.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-01-16 13:50:49.370
+!MESSAGE Started RMI Server, listening on port 41337

@@ -64,8 +64,8 @@ all: main-build
 main-build: board.elf secondary-outputs
 
 # Tool invocations
-board.elf board.map: $(OBJS) $(USER_OBJS) E:\ActiveQuest\App\ESP_STM\STM32F303VCTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "board.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\ActiveQuest\App\ESP_STM\STM32F303VCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="board.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+board.elf board.map: $(OBJS) $(USER_OBJS) /Users/andrazvz/Documents/FERI/projekt/ActiveQuest/ESP_STM/STM32F303VCTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "board.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/andrazvz/Documents/FERI/projekt/ActiveQuest/ESP_STM/STM32F303VCTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="board.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

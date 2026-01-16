@@ -47,6 +47,19 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
+typedef enum {
+	ESP_WAIT_READY,
+	ESP_SEND_AT,
+	ESP_WAIT_AT_OK,
+	ESP_SEND_ATE0,
+	ESP_SEND_CWMODE,
+	ESP_GOT_IP,
+	ESP_ASSIGNED_SSID_AND_PASS
+}esp_state_type;
+
+esp_state_type esp_state = ESP_WAIT_READY;
+
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -57,12 +70,67 @@ static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
+void esp_send(const char *cmd);
+void setup_esp_wifi(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void esp_send(const char *cmd)
+{
+    HAL_UART_Transmit(&huart1,
+                      (uint8_t*)cmd,
+                      strlen(cmd),
+                      HAL_MAX_DELAY);
+}
+
+
+void setup_esp_wifi(void)
+{
+    static char rx_line[128];
+    static uint8_t idx = 0;
+    uint8_t c;
+
+    //beri znak po znak
+    if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
+    {
+        if (idx < sizeof(rx_line) - 1)
+            rx_line[idx++] = c;
+
+        if (c == '\n')
+        {
+            rx_line[idx] = 0;
+            idx = 0;
+
+            //Da bo v terminalu
+            CDC_Transmit_FS((uint8_t*)rx_line, strlen(rx_line));
+
+            //State
+            if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
+            {
+                HAL_Delay(500);
+                esp_send("AT\r\n");
+                esp_state = ESP_WAIT_AT_OK;
+            }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
+            {
+                esp_send("ATE0\r\n");
+                esp_state = ESP_SEND_CWMODE;
+            }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_SEND_CWMODE)
+            {
+                esp_send("AT+CWMODE=2\r\n");
+                esp_state = ESP_GOT_IP;
+            }else if(strstr(rx_line,"OK") && esp_state == ESP_GOT_IP)
+            {
+            	esp_send("AT+CWSAP=\"ANDRAZ_ESP\",\"12345678\",5,3\r\n");
+            	esp_state = ESP_ASSIGNED_SSID_AND_PASS;
+            }
+        }
+    }
+}
 
 /* USER CODE END 0 */
 
@@ -102,21 +170,36 @@ int main(void)
   /* USER CODE BEGIN 2 */
   char test_msg[] = "STM32 v zivo na CP2102!";
   uint8_t temp_byte;
+  static uint8_t sending = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10);
+	  /*HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10);
+	  //Ce je iz USB prisel ukaz ga poslji na ESP
+	  if(cmd_ready && !sending){
+		  sending = 1;
+		  HAL_UART_Transmit(&huart1,cmd_buffer,cmd_len,HAL_MAX_DELAY);
+		  cmd_len = 0;
+		  cmd_ready = 0;
+	  }
 
-	      uint8_t esp_byte;
-	      // Timeout mora biti majhen (npr. 1 ali 5ms), da zanka hitro kroži
-	      if (HAL_UART_Receive(&huart1, &esp_byte, 1, 5) == HAL_OK)
-	      {
-	          CDC_Transmit_FS(&esp_byte, 1);
-	      }
+	  //Dobi odgovor od ESP
+	  uint8_t esp_byte;
+	  // Timeout mora biti majhen (npr. 1 ali 5ms), da zanka hitro kroži
+	  if (HAL_UART_Receive(&huart1, &esp_byte, 1, 5) == HAL_OK)
+	  {
+		  CDC_Transmit_FS(&esp_byte, 1);
+
+		  sending = 0;
+	  }*/
+	  setup_esp_wifi();
+
+
   }
   /* USER CODE END 3 */
 }
