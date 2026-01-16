@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
+#include "usbd_cdc_if.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -99,9 +100,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  char test_msg[] = "STM32 v zivo na CP2102!";
   uint8_t temp_byte;
-  char msg[] = "AT\r\n";
-  uint8_t rx_buffer[20];
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -109,22 +109,21 @@ int main(void)
 
   while (1)
   {
-	  HAL_UART_Transmit(&huart2, (uint8_t*)"STM32 Online\r\n", 14, 100);
+      HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // Vizualna potrditev
 
-	  // Branje iz PC (USART2) -> pošiljanje na ESP32 (USART1)
-	      if (HAL_UART_Receive(&huart2, &temp_byte, 1, 0) == HAL_OK)
-	      {
-	          HAL_UART_Transmit(&huart1, &temp_byte, 1, 10);
-	      }
+      // 1. Pošlji ukaz AT na ESP32 (USART1 - PC4/PC5)
+      char at_cmd[] = "AT\r\n";
+      HAL_UART_Transmit(&huart1, (uint8_t*)at_cmd, strlen(at_cmd), 100);
 
-	      // Branje iz ESP32 (USART1) -> pošiljanje na PC (USART2)
-	      if (HAL_UART_Receive(&huart1, &temp_byte, 1, 0) == HAL_OK)
-	      {
-	          HAL_UART_Transmit(&huart2, &temp_byte, 1, 10);
-	      }
-    /* USER CODE END WHILE */
+      // 2. Preberi odgovor od ESP32 (USART1) in ga pošlji na PC preko USB
+      uint8_t esp_byte;
+      // Povečamo timeout na 500ms, da ujamemo celoten odgovor "OK"
+      while (HAL_UART_Receive(&huart1, &esp_byte, 1, 500) == HAL_OK)
+      {
+          CDC_Transmit_FS(&esp_byte, 1);
+      }
 
-    /* USER CODE BEGIN 3 */
+      HAL_Delay(2000); // Premor med testi
   }
   /* USER CODE END 3 */
 }
