@@ -109,21 +109,14 @@ int main(void)
 
   while (1)
   {
-      HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // Vizualna potrditev
+	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10);
 
-      // 1. Pošlji ukaz AT na ESP32 (USART1 - PC4/PC5)
-      char at_cmd[] = "AT\r\n";
-      HAL_UART_Transmit(&huart1, (uint8_t*)at_cmd, strlen(at_cmd), 100);
-
-      // 2. Preberi odgovor od ESP32 (USART1) in ga pošlji na PC preko USB
-      uint8_t esp_byte;
-      // Povečamo timeout na 500ms, da ujamemo celoten odgovor "OK"
-      while (HAL_UART_Receive(&huart1, &esp_byte, 1, 500) == HAL_OK)
-      {
-          CDC_Transmit_FS(&esp_byte, 1);
-      }
-
-      HAL_Delay(2000); // Premor med testi
+	      uint8_t esp_byte;
+	      // Timeout mora biti majhen (npr. 1 ali 5ms), da zanka hitro kroži
+	      if (HAL_UART_Receive(&huart1, &esp_byte, 1, 5) == HAL_OK)
+	      {
+	          CDC_Transmit_FS(&esp_byte, 1);
+	      }
   }
   /* USER CODE END 3 */
 }
