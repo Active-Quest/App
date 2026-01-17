@@ -4,66 +4,39 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
   */
 /* USER CODE END Header */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
+#include "usbd_cdc_if.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
-
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 uint32_t last_send_tick = 0;
-uint8_t first_connect_done = 0;
+
+char esp_payload[32];
+int esp_payload_len = 0;
 
 typedef enum {
     ESP_WAIT_READY,
-    ESP_SEND_AT,
     ESP_WAIT_AT_OK,
-    ESP_SEND_CWMODE,
     ESP_WAIT_CWMODE_OK,
     ESP_SEND_CWJAP,
+    ESP_SEND_CIPSTART,
     ESP_WIFI_CONNECTED,
-	ESP_SEND_CIPSTART,
-	ESP_WAIT_PROMPT,
-	ESP_DATA_SENT
+    ESP_WAIT_PROMPT,
+    ESP_DATA_SENT
 } esp_state_type;
 
 esp_state_type esp_state = ESP_WAIT_READY;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,160 +44,232 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
+
 /* USER CODE BEGIN PFP */
 void ESP_Send_Command(const char *cmd);
 void setup_esp_wifi(void);
+
+uint8_t spiRead(uint8_t reg);
+void spiWrite(uint8_t reg, uint8_t val);
+void initL3GD20(void);
+float readActivity(void);
 /* USER CODE END PFP */
 
-/* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 void ESP_Send_Command(const char *cmd)
-  {
-      HAL_UART_Transmit(&huart1,
-                        (uint8_t*)cmd,
-                        strlen(cmd),
-                        HAL_MAX_DELAY);
-  }
-  void setup_esp_wifi(void)
-  {
-      static char rx_line[128];
-      static uint8_t idx = 0;
-      uint8_t c;
+{
+    HAL_UART_Transmit(&huart1, (uint8_t*)cmd, strlen(cmd), HAL_MAX_DELAY);
+}
 
-      // Beri znak po znak iz ESP32
-      if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
-      {
-    	  CDC_Transmit_FS(&c, 1);
+uint8_t spiRead(uint8_t reg)
+{
+    uint8_t tx[2] = { reg | 0x80, 0x00 };
+    uint8_t rx[2] = { 0 };
 
-          if (idx < sizeof(rx_line) - 1)
-              rx_line[idx++] = c;
+    HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 2, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_SET);
 
-          // Ce ESP pricakuje podatke
-          if (c == '>')
-			  {
-				  rx_line[idx] = 0;
-				  if (esp_state == ESP_WAIT_PROMPT)
-				  {
-					  if (first_connect_done == 0) { // Ob vzpostavitvi TCP
-						  HAL_UART_Transmit(&huart1, (uint8_t*)"TCP CONNECT\n", 12, 1000);
-						  first_connect_done = 1;
-					  } else { // Vsakih 10sec poslje 300
-						  HAL_UART_Transmit(&huart1, (uint8_t*)"300\n", 4, 1000);
-					  }
-					  esp_state = ESP_DATA_SENT;
-				  }
-				  idx = 0; // Ponastavi buffer
-			  }
+    return rx[1];
+}
 
-          if (c == '\n') // Ko dobimo celo vrstico
-          {
-              rx_line[idx] = 0;
-              idx = 0;
+void spiWrite(uint8_t reg, uint8_t val)
+{
+    uint8_t tx[2] = { reg & 0x7F, val };
 
-              // Izpis v Putty, za stanje
-              CDC_Transmit_FS((uint8_t*)rx_line, strlen(rx_line));
+    HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi1, tx, 2, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_SET);
+}
 
-              // Ob resetu ESP vrne ready
-              if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
-              {
-                  ESP_Send_Command("AT\r\n"); //Polje ukaz AT
-                  esp_state = ESP_WAIT_AT_OK;
-              } // ESP odgovori na AT z OK
-              else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
-              {
-                  ESP_Send_Command("AT+CWMODE=1\r\n"); // Preklop v Station mode
-                  esp_state = ESP_WAIT_CWMODE_OK;
-              } // ESP odgovori ob spremembi na wifi klient odgovori OK
-              else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_CWMODE_OK)
-              {
-                  ESP_Send_Command("AT+CWJAP=\"Murko\",\"vinickavas12\"\r\n");  // povezava na WIFI (moj domaci)
-                  esp_state = ESP_SEND_CWJAP;
-              } // ESP odgovori ob povezavi na WIFI
-              else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
-              {
-                  ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.178.20\",1234\r\n"); // Povezava na moj racunalnik z TCP
-                  esp_state = ESP_SEND_CIPSTART;
-              } // Ob povezavi
-              else if (strstr(rx_line, "CONNECT") && esp_state == ESP_SEND_CIPSTART)
-              {
-                  esp_state = ESP_WIFI_CONNECTED;
-              } // Potrditev da je ESP poslal na PC
-              else if (strstr(rx_line, "SEND OK") && esp_state == ESP_DATA_SENT)
-              {
-                  esp_state = ESP_WIFI_CONNECTED;
-              }
+void initL3GD20(void)
+{
+    uint8_t who = spiRead(0x0F);
 
-          }
-      }
-  }
+    if (who != 0xD4 && who != 0xD3)
+    {
+        while (1);
+    }
+
+    spiWrite(0x20, 0x0F);
+    spiWrite(0x23, 0x00);
+}
+
+float readActivity(void)
+{
+    int16_t x = (int16_t)((spiRead(0x29) << 8) | spiRead(0x28));
+    int16_t y = (int16_t)((spiRead(0x2B) << 8) | spiRead(0x2A));
+    int16_t z = (int16_t)((spiRead(0x2D) << 8) | spiRead(0x2C));
+
+    float gx = x * 0.00875f;
+    float gy = y * 0.00875f;
+    float gz = z * 0.00875f;
+
+    float activity = sqrtf(gx*gx + gy*gy + gz*gz);
+
+    static float activity_f = 0.0f;
+    activity_f = 0.9f * activity_f + 0.1f * activity;
+
+    float activity_norm = activity_f * 0.2f;
+    if (activity_norm > 100.0f)
+        activity_norm = 100.0f;
+
+    return activity_norm;
+}
+
+
+
+void setup_esp_wifi(void)
+{
+    static char rx_line[128];
+    static uint8_t idx = 0;
+    uint8_t c;
+
+    if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
+    {
+        if (idx < sizeof(rx_line) - 1)
+            rx_line[idx++] = c;
+
+        if (c == '>')
+        {
+            rx_line[idx] = 0;
+
+            if (esp_state == ESP_WAIT_PROMPT)
+            {
+                HAL_UART_Transmit(&huart1,
+                                  (uint8_t*)esp_payload,
+                                  esp_payload_len,
+                                  HAL_MAX_DELAY);
+
+                esp_state = ESP_DATA_SENT;
+            }
+            idx = 0;
+        }
+
+        if (c == '\n')
+        {
+            rx_line[idx] = 0;
+            idx = 0;
+
+            if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
+            {
+                ESP_Send_Command("AT\r\n");
+                esp_state = ESP_WAIT_AT_OK;
+            }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
+            {
+                ESP_Send_Command("AT+CWMODE=1\r\n");
+                esp_state = ESP_WAIT_CWMODE_OK;
+            }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_CWMODE_OK)
+            {
+                ESP_Send_Command("AT+CWJAP=\"virus\",\"987654321\"\r\n");
+                esp_state = ESP_SEND_CWJAP;
+            }
+            else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
+            {
+                ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.1.195\",1234\r\n");
+                esp_state = ESP_SEND_CIPSTART;
+            }
+            else if (strstr(rx_line, "CONNECT") && esp_state == ESP_SEND_CIPSTART)
+            {
+                esp_state = ESP_WIFI_CONNECTED;
+            }
+            else if (strstr(rx_line, "SEND OK") && esp_state == ESP_DATA_SENT)
+            {
+                esp_state = ESP_WIFI_CONNECTED;
+            }
+        }
+    }
+}
 /* USER CODE END 0 */
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
+	HAL_Init();
+	SystemClock_Config();
 
-  /* USER CODE BEGIN 1 */
+	MX_GPIO_Init();
+	MX_USB_DEVICE_Init();
 
-  /* USER CODE END 1 */
+	HAL_Delay(1000);
 
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_SPI1_Init();
-  MX_USART1_UART_Init();
-  MX_USB_DEVICE_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  setup_esp_wifi(); // Stroj stanja
-
-	  if (esp_state == ESP_WIFI_CONNECTED && first_connect_done == 0)
-	        {
-	            ESP_Send_Command("AT+CIPSEND=12\r\n"); // Na ESP polje dolzino podatkov, ki jih naj pricakuje
-	            esp_state = ESP_WAIT_PROMPT;
-	            last_send_tick = HAL_GetTick(); // Zacne steti za inteval posiljanje podatkov
-	        }
-
-		if (esp_state == ESP_WIFI_CONNECTED && first_connect_done == 1)
-		{
-			if (HAL_GetTick() - last_send_tick > 10000)
-			{
-				ESP_Send_Command("AT+CIPSEND=4\r\n"); // Na ESP polje dolzino podatkov, ki jih naj pricakuje
-				esp_state = ESP_WAIT_PROMPT;
-				last_send_tick = HAL_GetTick();
-			}
-		}
+	MX_SPI1_Init();
+	MX_USART1_UART_Init();
 
 
-    /* USER CODE END WHILE */
+    HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_SET);
+    initL3GD20();
+/*
+    while (1)
+    {
 
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+        setup_esp_wifi();
+
+        if (esp_state == ESP_WIFI_CONNECTED)
+        {
+            if (HAL_GetTick() - last_send_tick > 1000)
+            {
+                float activity = readActivity();
+                int activity_i = (int)(activity * 10);
+
+                esp_payload_len = snprintf(esp_payload,
+                                           sizeof(esp_payload),
+                                           "%d.%d\n",
+                                           activity_i / 10,
+                                           activity_i % 10);
+
+                char cmd[32];
+                snprintf(cmd, sizeof(cmd),
+                         "AT+CIPSEND=%d\r\n",
+                         esp_payload_len);
+
+                ESP_Send_Command(cmd);
+
+                esp_state = ESP_WAIT_PROMPT;
+                last_send_tick = HAL_GetTick();
+            }
+        }
+    }
+    */
+
+    while (1)
+    {
+        setup_esp_wifi();
+
+        if (esp_state == ESP_WIFI_CONNECTED)
+        {
+            if (HAL_GetTick() - last_send_tick > 1000)
+            {
+                float activity = readActivity();
+                int activity_i = (int)(activity * 10);
+
+                esp_payload_len = snprintf(esp_payload,
+                                           sizeof(esp_payload),
+                                           "ACT:%d.%d\n",
+                                           activity_i / 10,
+                                           activity_i % 10);
+
+                char cmd[32];
+                snprintf(cmd, sizeof(cmd),
+                         "AT+CIPSEND=%d\r\n",
+                         esp_payload_len);
+
+                ESP_Send_Command(cmd);
+
+                esp_state = ESP_WAIT_PROMPT;
+                last_send_tick = HAL_GetTick();
+            }
+        }
+    }
+
+
+
+
 }
+
+
 
 /**
   * @brief System Clock Configuration
@@ -292,9 +337,9 @@ static void MX_SPI1_Init(void)
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_4BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;	//<-----------------------------
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi1.Init.CLKPhase    = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
