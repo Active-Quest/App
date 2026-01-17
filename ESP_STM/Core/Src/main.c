@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-#include "usbd_cdc_if.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -45,7 +44,11 @@
 SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
-UART_HandleTypeDef huart2;
+
+/* USER CODE BEGIN PV */
+uint32_t last_send_tick = 0;
+uint8_t first_connect_done = 0;
+
 typedef enum {
     ESP_WAIT_READY,
     ESP_SEND_AT,
@@ -61,9 +64,6 @@ typedef enum {
 
 esp_state_type esp_state = ESP_WAIT_READY;
 
-/* USER CODE BEGIN PV */
-uint32_t last_send_tick = 0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,7 +71,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void ESP_Send_Command(const char *cmd);
 void setup_esp_wifi(void);
@@ -85,7 +84,6 @@ void ESP_Send_Command(const char *cmd)
                         (uint8_t*)cmd,
                         strlen(cmd),
                         HAL_MAX_DELAY);
-      //CDC_Transmit_FS((uint8_t*)cmd, strlen(cmd));
   }
   void setup_esp_wifi(void)
   {
@@ -101,13 +99,18 @@ void ESP_Send_Command(const char *cmd)
           if (idx < sizeof(rx_line) - 1)
               rx_line[idx++] = c;
 
+          // Ce ESP pricakuje podatke
           if (c == '>')
 			  {
 				  rx_line[idx] = 0;
 				  if (esp_state == ESP_WAIT_PROMPT)
 				  {
-					  // Zdaj lahko pošljemo dejanske podatke!
-					  HAL_UART_Transmit(&huart1, (uint8_t*)"300\n", 4, 1000);
+					  if (first_connect_done == 0) { // Ob vzpostavitvi TCP
+						  HAL_UART_Transmit(&huart1, (uint8_t*)"TCP CONNECT\n", 12, 1000);
+						  first_connect_done = 1;
+					  } else { // Vsakih 10sec poslje 300
+						  HAL_UART_Transmit(&huart1, (uint8_t*)"300\n", 4, 1000);
+					  }
 					  esp_state = ESP_DATA_SENT;
 				  }
 				  idx = 0; // Ponastavi buffer
@@ -118,49 +121,39 @@ void ESP_Send_Command(const char *cmd)
               rx_line[idx] = 0;
               idx = 0;
 
-              // Izpiši v PuTTY, da vidiš kaj se dogaja
+              // Izpis v Putty, za stanje
               CDC_Transmit_FS((uint8_t*)rx_line, strlen(rx_line));
 
-              // LOGIKA STROJA STANJA
+              // Ob resetu ESP vrne ready
               if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
               {
-                  ESP_Send_Command("AT\r\n");
+                  ESP_Send_Command("AT\r\n"); //Polje ukaz AT
                   esp_state = ESP_WAIT_AT_OK;
-              }
+              } // ESP odgovori na AT z OK
               else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
               {
                   ESP_Send_Command("AT+CWMODE=1\r\n"); // Preklop v Station mode
                   esp_state = ESP_WAIT_CWMODE_OK;
-              }
+              } // ESP odgovori ob spremembi na wifi klient odgovori OK
               else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_CWMODE_OK)
               {
-                  // POVEZAVA NA TVOJ WIFI
-                  ESP_Send_Command("AT+CWJAP=\"Murko\",\"vinickavas12\"\r\n");
+                  ESP_Send_Command("AT+CWJAP=\"Murko\",\"vinickavas12\"\r\n");  // povezava na WIFI (moj domaci)
                   esp_state = ESP_SEND_CWJAP;
-              }
+              } // ESP odgovori ob povezavi na WIFI
               else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
               {
-                  // Zdaj se poveži na IP tvojega računalnika (spremeni IP in port!)
-                  ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.178.20\",1234\r\n");
+                  ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.178.20\",1234\r\n"); // Povezava na moj racunalnik z TCP
                   esp_state = ESP_SEND_CIPSTART;
-              }
+              } // Ob povezavi
               else if (strstr(rx_line, "CONNECT") && esp_state == ESP_SEND_CIPSTART)
               {
-                  // Povezava je vzpostavljena, pošljimo 12 znakov (npr. "Hello World\n")
-                  ESP_Send_Command("AT+CIPSEND=4\r\n");
-                  esp_state = ESP_WAIT_PROMPT;
-              }
-              else if (strstr(rx_line, ">") && esp_state == ESP_WAIT_PROMPT)
-              {
-                  // Zdaj dejansko pošljemo podatke, Hercules jih bo prikazal
-                  ESP_Send_Command("300\n");
-                  esp_state = ESP_DATA_SENT;
-              }
+                  esp_state = ESP_WIFI_CONNECTED;
+              } // Potrditev da je ESP poslal na PC
               else if (strstr(rx_line, "SEND OK") && esp_state == ESP_DATA_SENT)
               {
-                  // Ko dobimo potrditev, da je poslano, gremo v stanje čakanja na naslednji interval
                   esp_state = ESP_WIFI_CONNECTED;
               }
+
           }
       }
   }
@@ -197,57 +190,38 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  //ESP_Send_Command("AT\r\n");
-  //ESP_Send_Command("AT+CWMODE=1\r\n");
-  // 3. Poveži se na WiFi (vpiši svojo SSID in geslo!)
-  // POZOR: Pazi na narekovaje znotraj niza!
-/*
-  // Pri CWJAP uporabi daljši delay, ker povezovanje traja/*
-  char wifi_cmd[] = "AT+CWJAP=\"Murko\",\"vinickavas12\"\r\n";
-  HAL_UART_Transmit(&huart1, (uint8_t*)wifi_cmd, strlen(wifi_cmd), 1000);
-  HAL_Delay(8000); // Daj mu 8 sekund, da se poveže
 
-
-  static uint8_t sending = 0;
-  */
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   while (1)
   {
-	  //HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // Vizualna potrditev delovanja
+	  setup_esp_wifi(); // Stroj stanja
 
-	  //CDC_Transmit_FS((uint8_t*)"STM32 Start\r\n", 13);
-	      setup_esp_wifi(); // Stroj stanja teče tukaj
+	  if (esp_state == ESP_WIFI_CONNECTED && first_connect_done == 0)
+	        {
+	            ESP_Send_Command("AT+CIPSEND=12\r\n"); // Na ESP polje dolzino podatkov, ki jih naj pricakuje
+	            esp_state = ESP_WAIT_PROMPT;
+	            last_send_tick = HAL_GetTick(); // Zacne steti za inteval posiljanje podatkov
+	        }
 
-	      if (HAL_GetTick() - last_send_tick > 20000)
-	          {
-	              if (esp_state == ESP_WIFI_CONNECTED)
-	              {
-	                  // Ponovno sprožimo postopek pošiljanja
-	                  // Število "300" ima 3 znake + \n = 4 znaki
-	                  ESP_Send_Command("AT+CIPSEND=4\r\n");
-	                  esp_state = ESP_WAIT_PROMPT;
+		if (esp_state == ESP_WIFI_CONNECTED && first_connect_done == 1)
+		{
+			if (HAL_GetTick() - last_send_tick > 10000)
+			{
+				ESP_Send_Command("AT+CIPSEND=4\r\n"); // Na ESP polje dolzino podatkov, ki jih naj pricakuje
+				esp_state = ESP_WAIT_PROMPT;
+				last_send_tick = HAL_GetTick();
+			}
+		}
 
-	                  // Posodobi čas zadnjega pošiljanja
-	                  last_send_tick = HAL_GetTick();
-	              }
-	          }
-/*
-	      uint8_t debug_byte;
-	          if (HAL_UART_Receive(&huart1, &debug_byte, 1, 0) == HAL_OK)
-	          {
-	              CDC_Transmit_FS(&debug_byte, 1);
-	          }
 
-	      // Majhen delay, da lučka ne utripa prehitro
-	      HAL_Delay(10);
-	      */
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
@@ -290,10 +264,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART1
-                              |RCC_PERIPHCLK_USART2;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_USART1;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
-  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.USBClockSelection = RCC_USBCLKSOURCE_PLL;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -373,41 +345,6 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
 
 }
 

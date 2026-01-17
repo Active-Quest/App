@@ -290,6 +290,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       return USBD_OK;
   /* USER CODE END 6 */
 }
+
 /**
   * @brief  CDC_Transmit_FS
   *         Data to send over USB IN endpoint are sent over CDC interface
