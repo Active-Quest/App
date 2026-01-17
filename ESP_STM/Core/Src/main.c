@@ -46,6 +46,17 @@ SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+typedef enum {
+    ESP_WAIT_READY,
+    ESP_SEND_AT,
+    ESP_WAIT_AT_OK,
+    ESP_SEND_CWMODE,
+    ESP_WAIT_CWMODE_OK,
+    ESP_SEND_CWJAP,
+    ESP_WIFI_CONNECTED
+} esp_state_type;
+
+esp_state_type esp_state = ESP_WAIT_READY;
 
 /* USER CODE BEGIN PV */
 
@@ -58,12 +69,65 @@ static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+void ESP_Send_Command(const char *cmd);
+void setup_esp_wifi(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void ESP_Send_Command(const char *cmd)
+  {
+      HAL_UART_Transmit(&huart1,
+                        (uint8_t*)cmd,
+                        strlen(cmd),
+                        HAL_MAX_DELAY);
+      //CDC_Transmit_FS((uint8_t*)cmd, strlen(cmd));
+  }
+  void setup_esp_wifi(void)
+  {
+      static char rx_line[128];
+      static uint8_t idx = 0;
+      uint8_t c;
 
+      // Beri znak po znak iz ESP32
+      if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
+      {
+          if (idx < sizeof(rx_line) - 1)
+              rx_line[idx++] = c;
+
+          if (c == '\n') // Ko dobimo celo vrstico
+          {
+              rx_line[idx] = 0;
+              idx = 0;
+
+              // Izpiši v PuTTY, da vidiš kaj se dogaja
+              CDC_Transmit_FS((uint8_t*)rx_line, strlen(rx_line));
+
+              // LOGIKA STROJA STANJA
+              if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
+              {
+                  ESP_Send_Command("AT\r\n");
+                  esp_state = ESP_WAIT_AT_OK;
+              }
+              else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
+              {
+                  ESP_Send_Command("AT+CWMODE=1\r\n"); // Preklop v Station mode
+                  esp_state = ESP_WAIT_CWMODE_OK;
+              }
+              else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_CWMODE_OK)
+              {
+                  // POVEZAVA NA TVOJ WIFI
+                  ESP_Send_Command("AT+CWJAP=\"Murko\",\"vinickavas12\"\r\n");
+                  esp_state = ESP_SEND_CWJAP;
+              }
+              else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
+              {
+                  esp_state = ESP_WIFI_CONNECTED;
+                  // Tukaj bi lahko dodal utripanje druge lučke za uspeh!
+              }
+          }
+      }
+  }
 /* USER CODE END 0 */
 
 /**
@@ -100,8 +164,19 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  char test_msg[] = "STM32 v zivo na CP2102!";
-  uint8_t temp_byte;
+  //ESP_Send_Command("AT\r\n");
+  //ESP_Send_Command("AT+CWMODE=1\r\n");
+  // 3. Poveži se na WiFi (vpiši svojo SSID in geslo!)
+  // POZOR: Pazi na narekovaje znotraj niza!
+/*
+  // Pri CWJAP uporabi daljši delay, ker povezovanje traja/*
+  char wifi_cmd[] = "AT+CWJAP=\"Murko\",\"vinickavas12\"\r\n";
+  HAL_UART_Transmit(&huart1, (uint8_t*)wifi_cmd, strlen(wifi_cmd), 1000);
+  HAL_Delay(8000); // Daj mu 8 sekund, da se poveže
+
+
+  static uint8_t sending = 0;
+  */
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -109,14 +184,20 @@ int main(void)
 
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10);
+	  //HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); // Vizualna potrditev delovanja
 
-	      uint8_t esp_byte;
-	      // Timeout mora biti majhen (npr. 1 ali 5ms), da zanka hitro kroži
-	      if (HAL_UART_Receive(&huart1, &esp_byte, 1, 5) == HAL_OK)
-	      {
-	          CDC_Transmit_FS(&esp_byte, 1);
-	      }
+	  //CDC_Transmit_FS((uint8_t*)"STM32 Start\r\n", 13);
+	      setup_esp_wifi(); // Stroj stanja teče tukaj
+/*
+	      uint8_t debug_byte;
+	          if (HAL_UART_Receive(&huart1, &debug_byte, 1, 0) == HAL_OK)
+	          {
+	              CDC_Transmit_FS(&debug_byte, 1);
+	          }
+
+	      // Majhen delay, da lučka ne utripa prehitro
+	      HAL_Delay(10);
+	      */
   }
   /* USER CODE END 3 */
 }

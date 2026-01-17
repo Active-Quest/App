@@ -22,8 +22,9 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-uint8_t cmd_buffer[64]; // Shramba za ukaz
-uint8_t cmd_index = 0;  // Trenutna pozicija v shrambi
+uint8_t cmd_ready = 0;
+uint8_t cmd_len = 0;
+uint8_t cmd_buffer[64];
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -262,31 +263,33 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   extern UART_HandleTypeDef huart1;
 
-  // 1. Shrani prejeti znak v medpomnilnik
-  for (uint32_t i = 0; i < *Len; i++) {
-      if (cmd_index < 63) {
-          cmd_buffer[cmd_index++] = Buf[i];
+  for (uint32_t i = 0; i < *Len; i++)
+      {
+          uint8_t c = Buf[i];
+
+          // ignoriraj \n
+          if (c == '\n')
+              continue;
+
+          if (c == '\r')
+          {
+              cmd_buffer[cmd_len++] = '\r';
+              cmd_buffer[cmd_len++] = '\n';
+              cmd_ready = 1;
+              break;
+          }
+
+          if (cmd_len < sizeof(cmd_buffer) - 2)
+          {
+              cmd_buffer[cmd_len++] = c;
+          }
       }
 
-      // 2. Preveri, če je prejeti znak Enter (\r)
-      if (Buf[i] == '\r') {
-          // Dodaj \n, ker ga ESP32 zahteva
-          cmd_buffer[cmd_index++] = '\n';
-
-          // 3. Pošlji CELOTEN ukaz na ESP32 (USART1)
-          HAL_UART_Transmit(&huart1, cmd_buffer, cmd_index, 100);
-
-          // 4. Ponastavi medpomnilnik za naslednji ukaz
-          cmd_index = 0;
-      }
-  }
-
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  return (USBD_OK);
+      USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
+      USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+      return USBD_OK;
   /* USER CODE END 6 */
 }
-
 /**
   * @brief  CDC_Transmit_FS
   *         Data to send over USB IN endpoint are sent over CDC interface
