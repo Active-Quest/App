@@ -54,10 +54,18 @@ typedef enum {
 	ESP_SEND_ATE0,
 	ESP_SEND_CWMODE,
 	ESP_GOT_IP,
-	ESP_ASSIGNED_SSID_AND_PASS
+	ESP_ASSIGNED_SSID_AND_PASS,
+	ESP_SEND_CIPMUX,
+	ESP_SEND_CIPSERVER,
+	ESP_SERVER_READY,
+	ESP_WAIT_CWMODE3_OK,
+	ESP_WAIT_CWJAP
 }esp_state_type;
 
 esp_state_type esp_state = ESP_WAIT_READY;
+
+char saved_pass[64];
+char saved_ssid[64];
 
 
 /* USER CODE BEGIN PV */
@@ -72,6 +80,8 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 void esp_send(const char *cmd);
 void setup_esp_wifi(void);
+void send_html(int link_id);
+int parse_wifi_info(char *line, char *ssid, char *pass);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -89,11 +99,10 @@ void esp_send(const char *cmd)
 
 void setup_esp_wifi(void)
 {
-    static char rx_line[128];
-    static uint8_t idx = 0;
+    static char rx_line[256];
+    static uint16_t idx = 0;
     uint8_t c;
 
-    //beri znak po znak
     if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
     {
         if (idx < sizeof(rx_line) - 1)
@@ -104,33 +113,160 @@ void setup_esp_wifi(void)
             rx_line[idx] = 0;
             idx = 0;
 
-            //Da bo v terminalu
+            // debug izpis
             CDC_Transmit_FS((uint8_t*)rx_line, strlen(rx_line));
 
-            //State
+            //CE sn pripravljen mu poslem HTML kodo
+            if (strstr(rx_line, "+IPD") && strstr(rx_line, "GET /?"))//NAJPREJ GET /?
+            {
+            	char ssid[64];
+            	char pass[64];
+
+            	//Ce je slo parsat wifi info
+            	if(parse_wifi_info(rx_line,ssid,pass)){
+            		//Najprej ga preklopim v AP+STA
+            		esp_send("AT+CWMODE=3\r\n");
+
+            		strcpy(saved_ssid,ssid);
+            		strcpy(saved_pass,pass);
+
+
+            		esp_state = ESP_WAIT_CWJAP;
+            	}
+            }else if(strstr(rx_line, "+IPD") && strstr(rx_line, "GET / ")){
+            	int link_id = rx_line[5] - '0'; //daj iz char v int
+        		send_html(link_id);
+        	}
+
+            //Premikam se po statih.. ko dobim odgovor grem na nasledni state
             if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
             {
-                HAL_Delay(500);
+            	//Test
                 esp_send("AT\r\n");
                 esp_state = ESP_WAIT_AT_OK;
             }
             else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
             {
+            	//Da mi ne ponavla (ce testiras to mej v CoolTerm nastavleno local echo)
                 esp_send("ATE0\r\n");
                 esp_state = ESP_SEND_CWMODE;
             }
             else if (strstr(rx_line, "OK") && esp_state == ESP_SEND_CWMODE)
             {
+            	//Nastavim Wifi mode v SoftAP mode (deluje kot wifi access point)
                 esp_send("AT+CWMODE=2\r\n");
                 esp_state = ESP_GOT_IP;
-            }else if(strstr(rx_line,"OK") && esp_state == ESP_GOT_IP)
-            {
-            	esp_send("AT+CWSAP=\"ANDRAZ_ESP\",\"12345678\",5,3\r\n");
-            	esp_state = ESP_ASSIGNED_SSID_AND_PASS;
             }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_GOT_IP)
+            {
+            	//Dam mu neko ime in pass da se lahko povezem na njega
+                esp_send("AT+CWSAP=\"ANDRAZ_ESP\",\"12345678\",5,3\r\n");
+                esp_state = ESP_ASSIGNED_SSID_AND_PASS;
+            }else if (strstr(rx_line, "OK") && esp_state == ESP_ASSIGNED_SSID_AND_PASS)
+            {
+            	//Dovolim vec povezav
+                esp_send("AT+CIPMUX=1\r\n");
+                esp_state = ESP_SEND_CIPMUX;
+            }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_SEND_CIPMUX)
+            {
+            	//Naredim TCP server
+                esp_send("AT+CIPSERVER=1,80\r\n");
+                esp_state = ESP_SEND_CIPSERVER;
+            }
+            else if (strstr(rx_line, "OK") && esp_state == ESP_SEND_CIPSERVER)
+            {
+            	//ko je vse konec izpisem v terminal da je server ready
+                esp_state = ESP_SERVER_READY;
+                CDC_Transmit_FS((uint8_t*)"HTTP server ready\r\n", 19);
+            }else if(strstr(rx_line, "OK") && esp_state == ESP_WAIT_CWMODE3_OK)
+            {
+            	char cmd[128];
+            	//poslem ukaz da se ESP poveze na vnesen wifi
+				sprintf(cmd, "AT+CWJAP=\"%s\",\"%s\"\r\n",saved_ssid,saved_pass);
+				esp_send(cmd);
+				esp_state = ESP_WAIT_CWJAP;
+				//DEBUG ZA SSID IN PASSWORD PARSER
+				uint8_t tx;
+
+				tx = CDC_Transmit_FS((uint8_t*)saved_ssid, strlen(saved_ssid));
+				HAL_Delay(5);
+
+				tx = CDC_Transmit_FS((uint8_t*)"\r\n", 2);
+				HAL_Delay(5);
+
+				tx = CDC_Transmit_FS((uint8_t*)saved_pass, strlen(saved_pass));
+				HAL_Delay(5);
+
+				tx = CDC_Transmit_FS((uint8_t*)"\r\n", 2);
+				HAL_Delay(5);
+            }
+
         }
     }
 }
+
+
+void send_html(int link_id)
+{
+    const char html_page[] =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/html\r\n"
+    "Connection: close\r\n"
+    "\r\n"
+    "<!DOCTYPE html>"
+    "<html>"
+    "<head><title>ESP32 WiFi Setup</title></head>"
+    "<body>"
+    "<h2>Wifi info</h2>"
+    "<form action=\"/\" method=\"GET\">"
+    "SSID:<br><input type=\"text\" name=\"ssid\"><br><br>"
+    "Pass:<br><input type=\"password\" name=\"pass\"><br><br>"
+    "<input type=\"submit\" value=\"Connect\">"
+    "</form>"
+    "</body>"
+    "</html>";
+
+    //POPRAVEK: zaprem kanal z istim id-jem ne pa vedno nultega
+    char cmd[32];
+    sprintf(cmd, "AT+CIPSEND=%d,%d\r\n",link_id, strlen(html_page));
+    esp_send(cmd);
+    HAL_Delay(50);
+    esp_send(html_page);
+    HAL_Delay(50);
+    sprintf(cmd,"AT+CIPCLOSE=%d\r\n",link_id);
+    esp_send(cmd);
+}
+
+int parse_wifi_info(char* line, char*ssid, char*pass){
+	char *ssid_start = strstr(line,"ssid=");
+	char *pass_start = strstr(line,"pass=");
+
+	if(!ssid_start || !pass_start){
+		return 0;
+	}
+
+	ssid_start += 5;//Preskocim "ssid="
+	pass_start += 5;//Preskocim "pass="
+
+	char *ssid_end = strchr(ssid_start,'&');//Tu lahko tak naredim ker je to vmes
+	char *pass_end = strchr(pass_start,' ');//Tu pa grem do presledka ker je pol HTTP...
+
+	if(!ssid_end || !pass_end){
+		return 0;
+	}
+
+	memcpy(ssid,ssid_start,ssid_end - ssid_start);
+	ssid[ssid_end - ssid_start] = 0;
+
+	memcpy(pass,pass_start,pass_end - pass_start);
+	pass[pass_end - pass_start] = 0;
+
+
+	return 1;
+
+}
+
 
 /* USER CODE END 0 */
 
@@ -198,6 +334,7 @@ int main(void)
 		  sending = 0;
 	  }*/
 	  setup_esp_wifi();
+
 
 
   }
