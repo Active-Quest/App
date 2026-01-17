@@ -53,12 +53,16 @@ typedef enum {
     ESP_SEND_CWMODE,
     ESP_WAIT_CWMODE_OK,
     ESP_SEND_CWJAP,
-    ESP_WIFI_CONNECTED
+    ESP_WIFI_CONNECTED,
+	ESP_SEND_CIPSTART,
+	ESP_WAIT_PROMPT,
+	ESP_DATA_SENT
 } esp_state_type;
 
 esp_state_type esp_state = ESP_WAIT_READY;
 
 /* USER CODE BEGIN PV */
+uint32_t last_send_tick = 0;
 
 /* USER CODE END PV */
 
@@ -92,8 +96,22 @@ void ESP_Send_Command(const char *cmd)
       // Beri znak po znak iz ESP32
       if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
       {
+    	  CDC_Transmit_FS(&c, 1);
+
           if (idx < sizeof(rx_line) - 1)
               rx_line[idx++] = c;
+
+          if (c == '>')
+			  {
+				  rx_line[idx] = 0;
+				  if (esp_state == ESP_WAIT_PROMPT)
+				  {
+					  // Zdaj lahko pošljemo dejanske podatke!
+					  HAL_UART_Transmit(&huart1, (uint8_t*)"300\n", 4, 1000);
+					  esp_state = ESP_DATA_SENT;
+				  }
+				  idx = 0; // Ponastavi buffer
+			  }
 
           if (c == '\n') // Ko dobimo celo vrstico
           {
@@ -122,8 +140,26 @@ void ESP_Send_Command(const char *cmd)
               }
               else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
               {
+                  // Zdaj se poveži na IP tvojega računalnika (spremeni IP in port!)
+                  ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.178.20\",1234\r\n");
+                  esp_state = ESP_SEND_CIPSTART;
+              }
+              else if (strstr(rx_line, "CONNECT") && esp_state == ESP_SEND_CIPSTART)
+              {
+                  // Povezava je vzpostavljena, pošljimo 12 znakov (npr. "Hello World\n")
+                  ESP_Send_Command("AT+CIPSEND=4\r\n");
+                  esp_state = ESP_WAIT_PROMPT;
+              }
+              else if (strstr(rx_line, ">") && esp_state == ESP_WAIT_PROMPT)
+              {
+                  // Zdaj dejansko pošljemo podatke, Hercules jih bo prikazal
+                  ESP_Send_Command("300\n");
+                  esp_state = ESP_DATA_SENT;
+              }
+              else if (strstr(rx_line, "SEND OK") && esp_state == ESP_DATA_SENT)
+              {
+                  // Ko dobimo potrditev, da je poslano, gremo v stanje čakanja na naslednji interval
                   esp_state = ESP_WIFI_CONNECTED;
-                  // Tukaj bi lahko dodal utripanje druge lučke za uspeh!
               }
           }
       }
@@ -188,6 +224,20 @@ int main(void)
 
 	  //CDC_Transmit_FS((uint8_t*)"STM32 Start\r\n", 13);
 	      setup_esp_wifi(); // Stroj stanja teče tukaj
+
+	      if (HAL_GetTick() - last_send_tick > 20000)
+	          {
+	              if (esp_state == ESP_WIFI_CONNECTED)
+	              {
+	                  // Ponovno sprožimo postopek pošiljanja
+	                  // Število "300" ima 3 znake + \n = 4 znaki
+	                  ESP_Send_Command("AT+CIPSEND=4\r\n");
+	                  esp_state = ESP_WAIT_PROMPT;
+
+	                  // Posodobi čas zadnjega pošiljanja
+	                  last_send_tick = HAL_GetTick();
+	              }
+	          }
 /*
 	      uint8_t debug_byte;
 	          if (HAL_UART_Receive(&huart1, &debug_byte, 1, 0) == HAL_OK)
