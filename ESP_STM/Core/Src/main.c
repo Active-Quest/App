@@ -1,30 +1,35 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
+  * STM32 -> TCP -> MongoDB (activities.avgSpeed[])
   ******************************************************************************
   */
 /* USER CODE END Header */
 
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 
-/* Private variables ---------------------------------------------------------*/
+/* HAL handles */
 SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart1;
 
-/* USER CODE BEGIN PV */
+/* ===== USER CONFIG ===== */
+#define ACTIVITY_BUF_SIZE 10
+#define SEND_INTERVAL_MS 20000
+
+/* ===== GLOBALS ===== */
 uint32_t last_send_tick = 0;
+uint32_t last_sample_tick = 0;
 
-char esp_payload[64];
-int esp_payload_len = 0;
+int activity_buf[ACTIVITY_BUF_SIZE];
+uint8_t activity_count = 0;
 
+char esp_payload[256];
+int esp_payload_len;
+
+/* ===== ESP STATE ===== */
 typedef enum {
     ESP_WAIT_READY,
     ESP_WAIT_AT_OK,
@@ -37,15 +42,13 @@ typedef enum {
 } esp_state_type;
 
 esp_state_type esp_state = ESP_WAIT_READY;
-/* USER CODE END PV */
 
-/* Private function prototypes -----------------------------------------------*/
+/* ===== PROTOTYPES ===== */
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 
-/* USER CODE BEGIN PFP */
 void ESP_Send_Command(const char *cmd);
 void setup_esp_wifi(void);
 
@@ -53,19 +56,18 @@ uint8_t spiRead(uint8_t reg);
 void spiWrite(uint8_t reg, uint8_t val);
 void initL3GD20(void);
 float readActivity(void);
-/* USER CODE END PFP */
 
-/* USER CODE BEGIN 0 */
-
+/* ===== ESP SEND ===== */
 void ESP_Send_Command(const char *cmd)
 {
     HAL_UART_Transmit(&huart1, (uint8_t*)cmd, strlen(cmd), HAL_MAX_DELAY);
 }
 
+/* ===== SPI ===== */
 uint8_t spiRead(uint8_t reg)
 {
     uint8_t tx[2] = { reg | 0x80, 0x00 };
-    uint8_t rx[2] = { 0 };
+    uint8_t rx[2];
 
     HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi1, tx, rx, 2, HAL_MAX_DELAY);
@@ -83,65 +85,43 @@ void spiWrite(uint8_t reg, uint8_t val)
     HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_SET);
 }
 
+/* ===== SENSOR ===== */
 void initL3GD20(void)
 {
-    uint8_t who = spiRead(0x0F);
-
-    if (who != 0xD4 && who != 0xD3)
-    {
-        while (1);
-    }
-
+    if (spiRead(0x0F) != 0xD4) while (1);
     spiWrite(0x20, 0x0F);
     spiWrite(0x23, 0x00);
 }
 
 float readActivity(void)
 {
-    int16_t x = (int16_t)((spiRead(0x29) << 8) | spiRead(0x28));
-    int16_t y = (int16_t)((spiRead(0x2B) << 8) | spiRead(0x2A));
-    int16_t z = (int16_t)((spiRead(0x2D) << 8) | spiRead(0x2C));
+    int16_t x = (spiRead(0x29) << 8) | spiRead(0x28);
+    int16_t y = (spiRead(0x2B) << 8) | spiRead(0x2A);
+    int16_t z = (spiRead(0x2D) << 8) | spiRead(0x2C);
 
     float gx = x * 0.00875f;
     float gy = y * 0.00875f;
     float gz = z * 0.00875f;
 
-    float activity = sqrtf(gx*gx + gy*gy + gz*gz);
-
-    static float activity_f = 0.0f;
-    activity_f = 0.9f * activity_f + 0.1f * activity;
-
-    float activity_norm = activity_f * 0.2f;
-    if (activity_norm > 100.0f)
-        activity_norm = 100.0f;
-
-    return activity_norm;
+    return sqrtf(gx*gx + gy*gy + gz*gz);
 }
 
-
-
+/* ===== ESP RX STATE MACHINE ===== */
 void setup_esp_wifi(void)
 {
-    static char rx_line[128];
+    static char rx[128];
     static uint8_t idx = 0;
     uint8_t c;
 
     if (HAL_UART_Receive(&huart1, &c, 1, 5) == HAL_OK)
     {
-        if (idx < sizeof(rx_line) - 1)
-            rx_line[idx++] = c;
+        if (idx < sizeof(rx)-1) rx[idx++] = c;
 
         if (c == '>')
         {
-            rx_line[idx] = 0;
-
             if (esp_state == ESP_WAIT_PROMPT)
             {
-                HAL_UART_Transmit(&huart1,
-                                  (uint8_t*)esp_payload,
-                                  esp_payload_len,
-                                  HAL_MAX_DELAY);
-
+                HAL_UART_Transmit(&huart1, (uint8_t*)esp_payload, esp_payload_len, HAL_MAX_DELAY);
                 esp_state = ESP_DATA_SENT;
             }
             idx = 0;
@@ -149,126 +129,89 @@ void setup_esp_wifi(void)
 
         if (c == '\n')
         {
-            rx_line[idx] = 0;
+            rx[idx] = 0;
             idx = 0;
 
-            if (strstr(rx_line, "ready") && esp_state == ESP_WAIT_READY)
-            {
-                ESP_Send_Command("AT\r\n");
-                esp_state = ESP_WAIT_AT_OK;
-            }
-            else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_AT_OK)
-            {
+            if (strstr(rx, "ready")) { ESP_Send_Command("AT\r\n"); esp_state = ESP_WAIT_AT_OK; }
+            else if (strstr(rx, "OK") && esp_state == ESP_WAIT_AT_OK)
                 ESP_Send_Command("AT+CWMODE=1\r\n");
-                esp_state = ESP_WAIT_CWMODE_OK;
-            }
-            else if (strstr(rx_line, "OK") && esp_state == ESP_WAIT_CWMODE_OK)
-            {
-                ESP_Send_Command("AT+CWJAP=\"virus\",\"987654321\"\r\n");
-                esp_state = ESP_SEND_CWJAP;
-            }
-            else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
-            {
-                ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.1.131\",1234\r\n");
-                esp_state = ESP_SEND_CIPSTART;
-            }
-            else if (strstr(rx_line, "CONNECT") && esp_state == ESP_SEND_CIPSTART)
-            {
+            else if (strstr(rx, "OK") && esp_state == ESP_WAIT_CWMODE_OK)
+                //ESP_Send_Command("AT+CWJAP=\"virus\",\"987654321\"\r\n");
+            	ESP_Send_Command("AT+CWJAP=\"Bor's Iphone\",\"pwuyalj4vz5q\"\r\n");
+            else if (strstr(rx, "WIFI GOT IP"))
+              // ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.1.131\",1234\r\n");
+            	ESP_Send_Command("AT+CIPSTART=\"TCP\",\"activequest.ddns.net\",1234\r\n");
+            else if (strstr(rx, "CONNECT"))
                 esp_state = ESP_WIFI_CONNECTED;
-            }
-            else if (strstr(rx_line, "SEND OK") && esp_state == ESP_DATA_SENT)
-            {
+            else if (strstr(rx, "SEND OK"))
                 esp_state = ESP_WIFI_CONNECTED;
-            }
         }
     }
 }
-/* USER CODE END 0 */
 
+/* ===== MAIN ===== */
 int main(void)
 {
-	HAL_Init();
-	SystemClock_Config();
+    HAL_Init();
+    SystemClock_Config();
+    MX_GPIO_Init();
+    MX_SPI1_Init();
+    MX_USART1_UART_Init();
 
-	MX_GPIO_Init();
-	MX_USB_DEVICE_Init();
-
-	HAL_Delay(1000);
-
-	MX_SPI1_Init();
-	MX_USART1_UART_Init();
-
-
-    HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_SET);
     initL3GD20();
-/*
-    while (1)
-    {
-
-        setup_esp_wifi();
-
-        if (esp_state == ESP_WIFI_CONNECTED)
-        {
-            if (HAL_GetTick() - last_send_tick > 1000)
-            {
-                float activity = readActivity();
-                int activity_i = (int)(activity * 10);
-
-                esp_payload_len = snprintf(esp_payload,
-                                           sizeof(esp_payload),
-                                           "%d.%d\n",
-                                           activity_i / 10,
-                                           activity_i % 10);
-
-                char cmd[32];
-                snprintf(cmd, sizeof(cmd),
-                         "AT+CIPSEND=%d\r\n",
-                         esp_payload_len);
-
-                ESP_Send_Command(cmd);
-
-                esp_state = ESP_WAIT_PROMPT;
-                last_send_tick = HAL_GetTick();
-            }
-        }
-    }
-    */
 
     while (1)
     {
         setup_esp_wifi();
 
-        if (esp_state == ESP_WIFI_CONNECTED)
+        /* sample every 1s */
+        if (HAL_GetTick() - last_sample_tick > 1000)
         {
-            if (HAL_GetTick() - last_send_tick > 1000)
+            if (activity_count < ACTIVITY_BUF_SIZE)
             {
-                float activity = readActivity();
-                int activity_i = (int)(activity * 10);
-
-                esp_payload_len = snprintf(esp_payload,
-                                           sizeof(esp_payload),
-                                           "{\"device\":\"stm32\",\"activity\":%d.%d}\r\n",
-                                           activity_i / 10,
-                                           activity_i % 10);
-
-
-                char cmd[32];
-                snprintf(cmd, sizeof(cmd),
-                         "AT+CIPSEND=%d\r\n",
-                         esp_payload_len);
-
-                ESP_Send_Command(cmd);
-
-                esp_state = ESP_WAIT_PROMPT;
-                last_send_tick = HAL_GetTick();
+                int scaled = (int)(readActivity() * 10);
+                activity_buf[activity_count++] = scaled;
             }
+            last_sample_tick = HAL_GetTick();
+        }
+
+        /* send every 20s */
+        if (esp_state == ESP_WIFI_CONNECTED &&
+            HAL_GetTick() - last_send_tick > SEND_INTERVAL_MS &&
+            activity_count > 0)
+        {
+            char values[128] = "[";
+            char tmp[12];
+
+            for (uint8_t i = 0; i < activity_count; i++)
+            {
+                snprintf(tmp, sizeof(tmp), "%d", activity_buf[i]);
+                strcat(values, tmp);
+                if (i < activity_count - 1) strcat(values, ",");
+            }
+            strcat(values, "]");
+
+            esp_payload_len = snprintf(
+                esp_payload, sizeof(esp_payload),
+                "{"
+                "\"device\":\"stm32\","
+                "\"sensor\":\"l3gd20\","
+                "\"values\":%s"
+                "}\r\n",
+                values
+            );
+
+            char cmd[32];
+            snprintf(cmd, sizeof(cmd), "AT+CIPSEND=%d\r\n", esp_payload_len);
+            ESP_Send_Command(cmd);
+
+            activity_count = 0;
+            esp_state = ESP_WAIT_PROMPT;
+            last_send_tick = HAL_GetTick();
         }
     }
-
-
-
-
 }
+
 
 
 
