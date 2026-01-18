@@ -22,7 +22,7 @@ UART_HandleTypeDef huart1;
 /* USER CODE BEGIN PV */
 uint32_t last_send_tick = 0;
 
-char esp_payload[32];
+char esp_payload[64];
 int esp_payload_len = 0;
 
 typedef enum {
@@ -169,7 +169,7 @@ void setup_esp_wifi(void)
             }
             else if (strstr(rx_line, "WIFI GOT IP") && esp_state == ESP_SEND_CWJAP)
             {
-                ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.1.195\",1234\r\n");
+                ESP_Send_Command("AT+CIPSTART=\"TCP\",\"192.168.1.131\",1234\r\n");
                 esp_state = ESP_SEND_CIPSTART;
             }
             else if (strstr(rx_line, "CONNECT") && esp_state == ESP_SEND_CIPSTART)
@@ -247,9 +247,10 @@ int main(void)
 
                 esp_payload_len = snprintf(esp_payload,
                                            sizeof(esp_payload),
-                                           "ACT:%d.%d\n",
+                                           "{\"device\":\"stm32\",\"activity\":%d.%d}\r\n",
                                            activity_i / 10,
                                            activity_i % 10);
+
 
                 char cmd[32];
                 snprintf(cmd, sizeof(cmd),
