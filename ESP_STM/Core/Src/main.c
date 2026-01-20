@@ -131,7 +131,7 @@ void setup_esp_wifi(void)
             		strcpy(saved_pass,pass);
 
 
-            		esp_state = ESP_WAIT_CWJAP;
+            		esp_state = ESP_WAIT_CWMODE3_OK;
             	}
             }else if(strstr(rx_line, "+IPD") && strstr(rx_line, "GET / ")){
             	int link_id = rx_line[5] - '0'; //daj iz char v int
@@ -154,7 +154,7 @@ void setup_esp_wifi(void)
             else if (strstr(rx_line, "OK") && esp_state == ESP_SEND_CWMODE)
             {
             	//Nastavim Wifi mode v SoftAP mode (deluje kot wifi access point)
-                esp_send("AT+CWMODE=2\r\n");
+                esp_send("AT+CWMODE=3\r\n");
                 esp_state = ESP_GOT_IP;
             }
             else if (strstr(rx_line, "OK") && esp_state == ESP_GOT_IP)
